@@ -15,7 +15,7 @@
 | `plugin/src/styles/30-composer.css` | shell-dev | 输入区：composer seat/card/input/toolbar/send、dock 胶囊、goal bar |
 | `plugin/src/styles/35-hero.css` | shell-dev | 空会话 Hero：品牌标记、大标题、lede、workspace/preset 控件 |
 | `plugin/src/styles/40-content.css` | surfaces-dev | 对话流：消息行/气泡、思考条、工具调用卡/结果板、代码块/行内码、diff、deliverables、轨迹 |
-| `plugin/src/styles/50-overlays.css` | surfaces-dev | 浮层：dialog/modal、菜单、popover、toast、审批/提问/计划卡、图片灯箱、命令面板、tooltip 豁免 |
+| `plugin/src/styles/50-overlays.css` | surfaces-dev | 浮层：dialog/modal、菜单、popover、toast、审批/提问/计划卡、图片灯箱、命令面板、玻璃 tooltip / 图表悬停卡 |
 | `plugin/src/styles/60-settings.css` | surfaces-dev | 设置窗口、设置卡片/行、插件页/市场/详情、右栏详情、文档预览、目录选择器 |
 | `plugin/lib/client.js` | 构建产物 | 由 `node tools/build-plugin.mjs` 生成，勿手改 |
 | `docs/*`、`tools/*`、`baseline/*` | Lead / 分析员 | 不要改 |
@@ -58,7 +58,7 @@ node tools/build-plugin.mjs     # 合并 src/styles/*.css（按文件名排序�
 
 **硬约束（来自 GLASS-SPEC §5）**
 1. `backdrop-filter` 会产生 fixed 包含块：`[data-composer-card]` 的霜放 `::before`，卡片本身 `backdrop-filter:none`；左栏/标题栏同理用伪元素；`[data-composer-seat]` 不铺底板、不挂霜。
-2. 每条 `[class*="_bubble"]` 规则必须带 `:not([role="tooltip"])`；tooltip 保持原生不透明深底白字。
+2. 每条 `[class*="_bubble"]` 规则必须带 `:not([role="tooltip"])`（保护消息气泡规则不重复命中浮层）；**tooltip 自身自 v1.9 起走高填充玻璃**（见 §7.5），不再是不透明深底白字。
 3. 菜单不要自绘新板：只改 `--dsw-specific-menu` / `--dsw-menu-surface-fill` / `--dsw-menu-backdrop-filter`（foundation 已设），或用 `[role="menu"]` 一类稳定容器做轻量补充；避免与宿主 `::before` 双层叠加。
 4. 大滚动容器（`[data-conversation-region="chat"]`、`.xz4KEq_scroll`）不要挂 backdrop-filter；只在**卡片/浮层**上挂。
 5. 代码块/行内码/终端保持高不透明（≥ `--dsg-fill-l2`，必要时再加一层白底），不要为了通透牺牲代码可读性。
@@ -109,4 +109,13 @@ node tools/build-plugin.mjs     # 合并 src/styles/*.css（按文件名排序�
    - 这两个按钮的 tooltip 位于侧栏列的层叠上下文里，必须用
      `21-collapsed-titlebar.css` 的 `:has([role='tooltip'])` 守卫把它抬到悬浮 header 之上，
      否则 tooltip 会被玻璃 header 染色成灰黑「阴影」。
+5. **玻璃 tooltip（v1.9 起）**：所有"悬停出现、移走消失"的提示统一走
+   `50-overlays.css §5`：
+   - 选择器：`[role='tooltip']`（DSH 原生）· `.lc-tip` / `.lc-chart-tip`（dsh-context 图表）·
+     `[class*='_chart-tip']` / `[class*='_chartTip']`（其他插件图表）；
+   - 配方：`--dsg-tip-fill`（浅 74% / 深 80%；图表卡 78% / 84%）+ `--dsg-blur-l2`（16px，
+     图表卡 ×1.1）+ `--dsg-sheen-l2` + 0.5px hairline + 轻投影；墨色用 `--dsg-tip-ink`；
+   - 图表卡必须 `z-index: 40`，否则坐标文字会压到提示卡上；
+   - **禁止**降低填充率把文字透出来（对比度）；无 `backdrop-filter` 时用 95% 填充兜底；
+   - 悬停预览卡（HoverCard：文件预览/会话预览）保持宿主材质 —— 玻璃会把预览图片洗掉。
 

@@ -76,6 +76,7 @@ git checkout baseline-v0 -- .
 - [x] 拖动分栏性能优化（resize guard）+ 设置页中文（v1.6-ui）
 - [x] 改名 `dsh-skin-mistblue`（雾蓝），旧配置迁移（v1.7-ui）
 - [x] 收起态标题栏：图标几何/中性色、隐藏更新蓝点、tooltip 不再被玻璃染色（v1.8-ui）
+- [x] 所有悬停 tooltip 玻璃化（含图表悬停卡可读性）（v1.9-ui）
 - [ ] 可选后续：菜单/审批卡/右栏文档预览的人工视觉复核；壁纸共存回归；生成式云雾背景
 
 ## 2026-10-24 追加修复：Windows 标题栏
@@ -138,3 +139,15 @@ git checkout baseline-v0 -- .
 - 实现：`plugin/src/styles/20-sidebar.css` §7、`plugin/src/styles/21-collapsed-titlebar.css`；
   截图与根因见 [`docs/REPORT.md`](docs/REPORT.md) 第 14 节。
 - 新增交付标签：`v1.8-ui`。
+
+## 2026-10-24 追加：悬停 tooltip 全面玻璃化
+
+- **图表详情卡透字**：`上下文趋势` 的悬停卡原来读 `--dsw-alias-bg-layer-2`（40% 白）且不挂霜，
+  坐标轴文字会透出来、坐标标记还会压到卡上；现在统一为 78% / 84% 填充 + 17.6px 霜，
+  并把 `z-index` 提到 40。
+- **全部悬停 tooltip 换装**：`[role='tooltip']` 从"不透明深底白字"改为
+  74% / 80% 的高填充玻璃（16px 霜 + 釉 + 发丝边 + 轻投影），文字改用主题墨色；
+  快捷键 pill、无霜降级（95%）一并处理。
+- 验证台：`tools/tooltip-preview.mjs`（真实 CSS 层叠 + headless Edge 截图），
+  浅/深色效果见 [`docs/REPORT.md`](docs/REPORT.md) 第 15 节。
+- 新增交付标签：`v1.9-ui`。

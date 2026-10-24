@@ -432,6 +432,49 @@ effAlpha = floor + a · (1 − floor)        floor = 0.45（浅）/ 0.59（深�
 | 浅色·悬停 tooltip（不再是墨影） | [`assets/final/collapsed-titlebar-tooltip-light.png`](assets/final/collapsed-titlebar-tooltip-light.png) |
 | 深色·悬停 tooltip | [`assets/final/collapsed-titlebar-tooltip-dark.png`](assets/final/collapsed-titlebar-tooltip-dark.png) |
 
+---
+
+## 15. 悬停 tooltip 全面玻璃化（2026-10-24 第九轮，`v1.9-ui`）
+
+用户反馈上下文趋势图的悬停详情卡"文字重叠看不清"，并要求把**所有**"光标悬停弹出、
+移走消失"的 tooltip 统一改成与整体一致的玻璃质感（透明 + 模糊 + 字要看清）。
+
+### 15.1 根因
+
+1. **图表详情卡**：dsh-context 的 `.lc-chart-tip` / `.lc-tip` 用
+   `background: var(--dsw-alias-bg-layer-2)`（我们把它映射成 39.8% 白）且**不挂霜**，
+   底下坐标轴、网格与堆叠面积直接透出来；同时它的 `z-index` 只有 5，
+   旁边的坐标文字/标记会画到卡片上 → 看起来像"两行字叠在一起"。
+2. **DSH 原生 tooltip**：`[role='tooltip']` 被 §5 故意设成"不透明深底白字"（GLASS-SPEC #161
+   的历史结论：玻璃化会把白字压成低对比）。用户明确要求玻璃风格后，这条旧策略必须反转。
+
+### 15.2 修法（`50-overlays.css §5`）
+
+- 新增共享配方 `--dsg-tip-fill / --dsg-tip-fill-chart / --dsg-tip-ink / --dsg-tip-shadow`：
+  - 原生 tooltip：浅 74% 白、深 80% `#0d1524` + `blur(16px) saturate(1.45)` + 釉 + 0.5px 发丝边；
+  - 图表卡加厚到 **78% / 84%**、霜 ×1.1，并 `z-index: 40`（压住绘图标记）；
+  - 文字统一 `--dsg-tip-ink = --dsw-alias-label-primary`；快捷键 pill 改中性底，不再是白字压深底；
+- 覆盖范围：`[role='tooltip']`、`.lc-tip`、`.lc-chart-tip`、`[class*='_chart-tip']`、`[class*='_chartTip']`；
+- 无 `backdrop-filter` 环境：填充率提到 95%/96%，保证仍然挡得住背景；
+- **悬停预览卡（HoverCard）不动**：文件/会话预览里有图片，玻璃化会把预览洗白，保持宿主材质。
+
+> 为什么填充率是 74%/78% 而不是更低：卡片要盖住底下 12px 的坐标文字。16px 霜把底图洗成色块，
+> 74% 白叠加后底层墨色只剩 ~5% 权重，正文对比度仍在 4.5:1 以上；再低就会重新出现"透字"。
+
+### 15.3 验证
+
+- HMR 已把新 CSS 推到运行中的实例（构建 11 CSS / 149.3 KiB，`tools/test-plugin-logic.mjs` 9/9 PASS）。
+- 实机窗口当时被其他应用（Arduino / QQ）覆盖，鼠标输入不可达，改用**同一套真实 CSS 的验证台**：
+  `tools/tooltip-preview.mjs` 生成 `.ref/tip-preview/{light,dark}.html`，按与 DSH 相同的顺序加载
+  baseline 主题 → dsh-context 宿主 CSS → `plugin/src/styles/*.css`，用 headless Edge 以 2x 渲染截图。
+  这样验证的是"宿主规则 + 我们的覆盖"的**真实层叠结果**，而不是手写 mock。
+
+| 场景 | 截图 |
+|---|---|
+| 浅色·图表悬停卡（高填充玻璃，坐标字不再透出） | [`assets/final/tooltip-glass-light.png`](assets/final/tooltip-glass-light.png) |
+| 深色·同上 | [`assets/final/tooltip-glass-dark.png`](assets/final/tooltip-glass-dark.png) |
+
+
 
 
 

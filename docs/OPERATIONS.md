@@ -33,6 +33,22 @@ node tools/build-plugin.mjs
 ```
 会激活 DSH 主窗口后截取窗口区域（PNG）。用 `read_image` 查看。
 
+- 窗口被其他应用挡住、又不想抢焦点时，用 `tools/shot-pw.ps1`（`PrintWindow`，可截被遮挡窗口）：
+  ```powershell
+  & .\tools\shot-pw.ps1 -OutPath .ref\screenshots-archive\shot.png
+  ```
+- 只想验证 `plugin/src/styles/*.css` 的层叠结果（例如 tooltip 玻璃），可以用验证台，
+  不需要动真实窗口：
+  ```powershell
+  node tools/tooltip-preview.mjs
+  & 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe' --headless=new --disable-gpu `
+      --force-device-scale-factor=2 --window-size=760,560 `
+      --screenshot=.ref\tip-preview\shot.png file:///<repo>/.ref/tip-preview/light.html
+  ```
+  验证台按 DSH 的加载顺序引入 baseline 主题 → dsh-context 宿主 CSS → 插件 CSS，
+  渲染浅/深两套 `.lc-chart-tip` 与 `[role='tooltip']` 样例。
+
+
 ## 回滚
 
 1. **只回滚代码**（保留插件安装状态，样式 HMR 恢复）：

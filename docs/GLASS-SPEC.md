@@ -298,7 +298,7 @@ tier 语义：**global** = 全局面（不受对话/窗口开关约束，吃全�
 | 19 | 插件浮层（更新提示/仓库抽屉/预设介绍） | `.we-update-notice`、`.we-repo-panel--open`、`.we-preset-intro` | floaters | `--we-floaters-alpha`（见 §1.3） | `blur(--we-floaters-blur)`（预设介绍写死 18px sat 1.2） | 自有类名，不依赖宿主 |
 | 20 | 宿主 Modal 遮罩 | `--dsw-mask-blur`（宿主遮罩自绘 `backdrop-filter: var(--dsw-mask-blur)`） | global | — | 重声明 token 为 `blur(--we-blur) saturate(1.3) brightness(1.04) contrast(1.01)` | 一次覆盖**所有** `role=dialog`/灯箱/设置 / 图片查看器，不必逐选择器补 |
 | 21 | 菜单 / 下拉 / 悬停面板 | `--dsw-specific-menu` + `--dsw-menu-backdrop-filter`（宿主在 `*_panel`/`*_menu` 元素或它们的 `::before` 上消费） | window | 宿主值：浅 `#f8f9fa94`(58%)、深 `#43454a73`(45%)；darwin 覆写 `#f8f9faf0`/`#303136f0`(94%) | 宿主 `blur(40px) saturate(150%)` | **WE 完全不碰菜单**；新引擎要接就在 body 上重声明这两个 token，别给菜单画自己的板子 |
-| 22 | Tooltip | `[role="tooltip"]`（宿主类名也是 `_bubble_*`） | **豁免** | 保持 `--dsw-alias-tooltip-bg` 不透明 | 不加霜 | 白字+深底；给玻璃会把对比度打到 1.07–1.13:1（#161） |
+| 22 | Tooltip / 图表悬停卡 | `[role="tooltip"]`、`.lc-tip`、`.lc-chart-tip`、`[class*="_chart-tip"]`、`[class*="_chartTip"]` | **玻璃 L2-tip**（v1.9 起） | `--dsg-tip-fill`：浅 74% 白、深 80% `#0d1524`；图表卡加厚到 78% / 84% | `blur(--dsg-blur-l2) saturate(1.45)`；图表卡 ×1.1 | 旧策略是"tooltip 恒不透明深底白字"（#161），v1.9 用户明确要求全部悬停 tooltip 玻璃化：**用高填充率换可读性**（74%+16px 霜 ⇒ 底下图表文字被洗成浅灰，墨色正文对比度仍 ≥4.5:1），不再直接不透明 |
 | 23 | 工具结果板（7 锚点） | `[data-chat-flow-kind="context"] [data-context-injection-body]`、`[data-terminal]`、`[data-tool="read"] [data-read]`、`[data-tool="grep"] [data-search="matches"]`、`[data-tool="glob"] [data-search="paths"]`、`[data-tool="write"] [data-diff]`、`[data-variant="others"] [class*="_ioCard"]` | chat | `--we-tool-glass-fill`（`a + 0.06`，**不过地板**） | `blur(--we-blur)` | 门：`data-we-thinking-glass`；同时把 `--dsw-alias-markdown-code-block(-banner)`、`--dsl-code-block-background` 置透明 |
 | 24 | 代码块吸顶条 | `[data-chat-flow] .md-code-block > :has(> [data-code-block-banner])` | global | 地板 floor + 釉 `a×0.6` | `blur(--we-blur)` | 宿主 sticky 载体读 `--dsw-alias-bg-base`，被我们置透明后必须**重铺底板**，否则滚动时复制按钮直接压在正文上（#156④） |
 | 25 | 胶囊族 | `[data-dsh-navbar] > button[data-vlln-load-older]`、`[data-slot="conversation.view"] button[class*="_toBottom"]`、`[data-slot="sidebar"] :not([class*="_collapsed"]) > button[class*="_newSession"]` | chat | `--we-capsule-glass-fill`（`rgba(capsule-tint, --we-inline-code-alpha=0.10)`） | `blur(--we-inline-code-blur) sat 1.3` | 局部重声明 `--dsw-alias-bg-layer-2` / `interactive-bg-hover` / `button-floating-fill` 保 hover/disabled |
@@ -606,7 +606,7 @@ body[data-ds-dark-theme] {
 | 编辑器 / 终端（`.cm-editor` / `.xterm`） | One Dark/Light 与 xterm 调色板按不透明底设计 | ≥84%，WE 默认 88% |
 | 设置窗口 | 整窗都是可点文字，且覆盖宿主全部原生分区 | ≥85% |
 | 菜单 / 下拉 | 选项文字紧贴、命中区小，且宿主的 `--dsw-specific-menu` 在 darwin 已被提到 94% | ≥86%（深色 ≥90%） |
-| Tooltip | 深底白字，玻璃化会白字压浅底 | 保持不透明 |
+| Tooltip / 图表悬停卡 | 深底白字，玻璃化会白字压浅底 | v1.9 改为**高填充玻璃**（浅 74%/深 80%，图表卡 78%/84%）+ 16px 霜；墨色改用 `--dsg-tip-ink`，不再白字 |
 | 原生 `<select>` 弹层 | Chromium 弹层是独立文档：底色不透明才取色、文字继承 select 墨色 | 不透明 `--we-popup-row-bg` + 对比墨 `-ink` |
 | 工具结果板（diff / 终端输出） | 用户要"读代码"，不是看玻璃 | 保持 `a+0.06` 的平铺板 + 地板兜底，别开独立透明档 |
 
@@ -705,6 +705,7 @@ body[data-ds-dark-theme] .dsg-aurora { opacity: .35; }   /* 深色档同理：�
 - **症状**：悬浮提示变成浅底白字（对比度 1.07–1.13:1，全白一片）。
 - **根因**：宿主 Tooltip 的类名也是 `_bubble_*`（与消息气泡共享后缀约定），但它是独立浮层：底 `--dsw-alias-tooltip-bg`（浅 `neutral-bluish-850`、深 `750`），文字固定近白；一旦被 `[class*="_bubble"]` 的玻璃规则命中，底变浅、字不变。
 - **修法**：**每条** `[class*="_bubble"]` 规则都带 `:not([role="tooltip"])`（WE 为此加了守卫 F2dN，并明确"作用域"与"豁免"是两件事）。判据用宿主语义属性 `role="tooltip"`，而不是 `[data-chat-flow]` 作用域 —— 浮层可能渲染在触发元素旁，不在会话流里。
+- **v1.9 补充（策略反转）**：用户要求"所有悬停 tooltip 都玻璃化"，所以现在 tooltip **不再靠深底白字**，而是走 §3.1 #22 的高填充玻璃配方（浅 74% / 深 80%，墨色 `--dsg-tip-ink`）。`_bubble:not([role="tooltip"])` 守卫**继续保留**，因为它的语义是"消息气泡的玻璃规则不要重复命中浮层"，与 tooltip 自己是否有玻璃无关。同理，图表悬停卡（`.lc-chart-tip` 等）原先读 `--dsw-alias-bg-layer-2`（40% 无霜）导致底下坐标文字透出，现在统一覆盖为 78%/84% + 17.6px 霜。
 
 ### 5.3 菜单通道 `--dsw-menu-backdrop-filter`
 

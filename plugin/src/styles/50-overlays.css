@@ -4,14 +4,16 @@
    Tier map:
      L3  dialogs, question / plan-review / approval cards, lightbox chrome
      token channel  menus (--dsw-specific-menu / --dsw-menu-backdrop-filter)
-     exempt         tooltip, hovercard, native <select>, [data-windows-menu]
+     glass tip      tooltips + chart hover tips (v1.9 — L2 frost, see §5)
+     exempt         hovercard (host preview card), native <select>, [data-windows-menu]
    Hard rules honoured here:
      · [class*="_bubble"] rules always carry :not([role="tooltip"])
      · menus are NOT re-painted (host already draws a material layer); only
        tokens + radius/rows are tuned — no double board
      · mask keeps using --dsw-mask-blur (tuned lighter here so the dialog's
        own frost is not stacked on top of a second large blur)
-     · tooltip / hovercard / native menus stay opaque with their dark ink
+     · tooltips are glass with a legible high fill; hovercards / native menus
+       keep the host material (frosted image previews would lose legibility)
    ========================================================================== */
 
 /* mask channel: the dialog owns the strong frost (L3); keep the backdrop
@@ -196,25 +198,97 @@ html[data-dsg='on'] [class*='_preview']:has(> [class*='_previewPrompt']) {
 }
 
 /* ============================================================================
-   5. tooltip — EXEMPT: opaque dark plate, white ink. Never frost it.
+   5. tooltips — L2 glass plate (v1.9)
+   ----------------------------------------------------------------------------
+   Every hover-only tooltip shares one glass recipe:
+     · DSH primitive tooltips            → [role='tooltip']
+     · dsh-context chart hover tips      → .lc-tip / .lc-chart-tip
+     · other plugin chart tips           → [class*='chart-tip'] / [class*='chartTip']
+   The fill is deliberately high (74% light / 78% dark) so busy chart labels
+   underneath can never bleed through the plate — the ink stays readable — while
+   the 16px frost + sheen keeps the glass look. Chart tips get a slightly
+   stronger fill because they sit on the densest surface (stacked area charts).
    ========================================================================== */
+html[data-dsg='on'] {
+  --dsg-tip-fill: color-mix(in srgb, #ffffff 74%, transparent);
+  --dsg-tip-fill-chart: color-mix(in srgb, #ffffff 78%, transparent);
+  --dsg-tip-border: rgba(255, 255, 255, 0.62);
+  --dsg-tip-ink: var(--dsw-alias-label-primary);
+  --dsg-tip-shadow:
+    0 12px 30px -14px rgba(23, 48, 108, 0.42),
+    0 2px 6px rgba(23, 48, 108, 0.1);
+}
+html[data-dsg='on'] body[data-ds-dark-theme] {
+  --dsg-tip-fill: color-mix(in srgb, #0d1524 80%, transparent);
+  --dsg-tip-fill-chart: color-mix(in srgb, #0d1524 84%, transparent);
+  --dsg-tip-border: rgba(255, 255, 255, 0.16);
+  --dsg-tip-shadow:
+    0 14px 34px -16px rgba(0, 0, 0, 0.66),
+    0 2px 8px rgba(0, 0, 0, 0.34);
+}
+
+html[data-dsg='on']
+  :is(
+    [role='tooltip'],
+    .lc-tip,
+    .lc-chart-tip,
+    [class*='_chart-tip'],
+    [class*='_chartTip']
+  ) {
+  background-color: var(--dsg-tip-fill) !important;
+  background-image: var(--dsg-sheen-l2) !important;
+  -webkit-backdrop-filter: var(--dsg-blur-l2) saturate(1.45) brightness(1.02);
+  backdrop-filter: var(--dsg-blur-l2) saturate(1.45) brightness(1.02);
+  border: 0.5px solid var(--dsg-tip-border) !important;
+  border-radius: 10px;
+  color: var(--dsg-tip-ink) !important;
+  box-shadow: var(--dsg-tip-shadow);
+  text-shadow: none;
+}
+
+/* DSH primitive tooltip: tiny plate + shortcut pills */
 html[data-dsg='on'] [role='tooltip'] {
-  background-color: var(--dsw-alias-tooltip-bg);
-  background-image: none;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  color: var(--dsw-static-neutral-bluish-00);
-  border-radius: 8px;
   padding: 5px 9px;
   font-size: 12px;
   line-height: 18px;
   font-weight: 400;
-  box-shadow: var(--dsg-bevel-l2);
+  border-radius: 9px;
 }
 html[data-dsg='on'] [role='tooltip'] :is(kbd, [class*='_key']) {
-  background-color: var(--dsw-alias-tooltip-key-bg);
+  background-color: color-mix(in srgb, var(--dsg-tip-ink) 9%, transparent);
+  border: 0.5px solid color-mix(in srgb, var(--dsg-tip-ink) 13%, transparent);
   border-radius: 4px;
-  color: var(--dsw-static-neutral-bluish-00);
+  color: var(--dsg-tip-ink);
+}
+html[data-dsg='on'] [role='tooltip'] [class*='_shortcut'],
+html[data-dsg='on'] [role='tooltip'] [class*='_label'] {
+  color: var(--dsg-tip-ink);
+}
+
+/* chart hover tips: denser fill + softer edge, always above the plot marks */
+html[data-dsg='on'] :is(.lc-tip, .lc-chart-tip, [class*='_chart-tip'], [class*='_chartTip']) {
+  background-color: var(--dsg-tip-fill-chart) !important;
+  -webkit-backdrop-filter: calc(var(--dsg-blur-l2) * 1.1) saturate(1.5) brightness(1.02);
+  backdrop-filter: calc(var(--dsg-blur-l2) * 1.1) saturate(1.5) brightness(1.02);
+  border-radius: 10px;
+  padding: 6px 10px;
+  color: var(--dsg-tip-ink) !important;
+  z-index: 40;
+}
+html[data-dsg='on'] :is(.lc-chart-tip, [class*='_chart-tip'], [class*='_chartTip']) span + span {
+  color: var(--dsw-alias-label-secondary);
+}
+
+/* no backdrop-filter: raise the fill so the plate still blocks what is behind */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  html[data-dsg='on']
+    :is([role='tooltip'], .lc-tip, .lc-chart-tip, [class*='_chart-tip'], [class*='_chartTip']) {
+    background-color: color-mix(in srgb, #ffffff 95%, transparent) !important;
+  }
+  html[data-dsg='on'] body[data-ds-dark-theme]
+    :is([role='tooltip'], .lc-tip, .lc-chart-tip, [class*='_chart-tip'], [class*='_chartTip']) {
+    background-color: color-mix(in srgb, #0d1524 96%, transparent) !important;
+  }
 }
 
 /* ============================================================================
