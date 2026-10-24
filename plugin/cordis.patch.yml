@@ -1,0 +1,7 @@
+# dsh-ui-deepseek — bundle patch.
+#
+# One Host row; the browser half rides `dsh.client` in package.json and is served
+# by client-modules at /plugins/dsh-ui-deepseek/client.js.
+- insert:
+    - id: ui-deepseek
+      name: 'dsh-ui-deepseek'

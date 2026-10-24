@@ -1,0 +1,249 @@
+/* ============================================================================
+   dsh-ui-deepseek · 00 foundation
+   DeepSeek-web visual language: airy mist-blue canvas, hairline grid, soft
+   aurora glows, translucent surfaces, DeepSeek-blue accent.
+   All colours are token overrides on body so every shipped component follows.
+   ========================================================================== */
+
+/* ---- atmosphere layers -------------------------------------------------- */
+html[data-dsg='on'] body {
+  background-color: transparent !important;
+}
+
+html[data-dsg='on'] .dsg-atmosphere {
+  position: fixed;
+  inset: -12%;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 90% at 50% -10%, #ffffff 0%, rgba(255, 255, 255, 0) 62%),
+    linear-gradient(180deg, #eef5ff 0%, #f6f9ff 34%, #e9f0fe 72%, #f3f7ff 100%);
+}
+
+/* Aurora blobs: very large, very soft, permanently drifting a few px. */
+html[data-dsg='on'] .dsg-atmosphere .dsg-aurora {
+  position: absolute;
+  display: block;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: 0.62;
+  will-change: transform;
+  animation: dsg-drift 26s ease-in-out infinite alternate;
+}
+html[data-dsg='on'] .dsg-atmosphere .dsg-aurora-a {
+  width: 58vw; height: 46vw;
+  left: -12vw; top: -10vw;
+  background: radial-gradient(circle at 40% 40%, rgba(120, 158, 255, 0.55), rgba(120, 158, 255, 0) 68%);
+}
+html[data-dsg='on'] .dsg-atmosphere .dsg-aurora-b {
+  width: 52vw; height: 44vw;
+  right: -14vw; top: 2vh;
+  background: radial-gradient(circle at 50% 50%, rgba(178, 203, 255, 0.55), rgba(178, 203, 255, 0) 70%);
+  animation-delay: -8s;
+  animation-duration: 32s;
+}
+html[data-dsg='on'] .dsg-atmosphere .dsg-aurora-c {
+  width: 70vw; height: 40vw;
+  left: 18vw; bottom: -22vw;
+  background: radial-gradient(circle at 50% 50%, rgba(205, 222, 255, 0.6), rgba(205, 222, 255, 0) 72%);
+  animation-delay: -15s;
+  animation-duration: 38s;
+}
+
+/* Faint engineering grid, faded out at the edges (matches deepseek.com). */
+html[data-dsg='on'] .dsg-atmosphere .dsg-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, rgba(86, 118, 180, 0.055) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(86, 118, 180, 0.055) 1px, transparent 1px);
+  background-size: 88px 88px;
+  -webkit-mask-image: radial-gradient(120% 95% at 50% 32%, #000 30%, transparent 82%);
+  mask-image: radial-gradient(120% 95% at 50% 32%, #000 30%, transparent 82%);
+}
+
+/* Micro grain keeps large translucent fields from banding. */
+html[data-dsg='on'] .dsg-atmosphere .dsg-grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.16;
+  mix-blend-mode: soft-light;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/></svg>");
+}
+
+@keyframes dsg-drift {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to   { transform: translate3d(1.6vw, -1.2vh, 0) scale(1.04); }
+}
+
+/* Dark palette: deep navy glass (DeepSeek night mode), same composition. */
+html[data-dsg='on'] body[data-ds-dark-theme] .dsg-atmosphere {
+  background:
+    radial-gradient(120% 90% at 50% -10%, rgba(45, 72, 140, 0.42) 0%, rgba(10, 14, 26, 0) 60%),
+    linear-gradient(180deg, #0a1020 0%, #0c1424 40%, #0a111f 75%, #0b1426 100%);
+}
+html[data-dsg='on'] body[data-ds-dark-theme] .dsg-atmosphere .dsg-aurora { opacity: 0.34; }
+html[data-dsg='on'] body[data-ds-dark-theme] .dsg-atmosphere .dsg-aurora-a {
+  background: radial-gradient(circle at 40% 40%, rgba(77, 107, 254, 0.5), rgba(77, 107, 254, 0) 68%);
+}
+html[data-dsg='on'] body[data-ds-dark-theme] .dsg-atmosphere .dsg-aurora-b {
+  background: radial-gradient(circle at 50% 50%, rgba(90, 130, 255, 0.32), rgba(90, 130, 255, 0) 70%);
+}
+html[data-dsg='on'] body[data-ds-dark-theme] .dsg-atmosphere .dsg-aurora-c {
+  background: radial-gradient(circle at 50% 50%, rgba(120, 90, 255, 0.26), rgba(120, 90, 255, 0) 72%);
+}
+html[data-dsg='on'] body[data-ds-dark-theme] .dsg-atmosphere .dsg-grid {
+  background-image:
+    linear-gradient(to right, rgba(150, 180, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(150, 180, 255, 0.05) 1px, transparent 1px);
+}
+
+/* ---- shared material knobs ---------------------------------------------- */
+html[data-dsg='on'] {
+  --dsg-blue: #4d6bfe;
+  --dsg-blue-strong: #3556f0;
+  --dsg-blue-soft: rgba(77, 107, 254, 0.14);
+  --dsg-blue-ring: rgba(77, 107, 254, 0.42);
+  --dsg-glass-blur: calc(20px * var(--dsg-blur, 1));
+  --dsg-card-blur: calc(26px * var(--dsg-blur, 1));
+  --dsg-overlay-blur: calc(34px * var(--dsg-blur, 1));
+  --dsg-sat: 1.7;
+  --dsg-brightness: 1.04;
+  --dsg-radius-card: 20px;
+  --dsg-radius-modal: 24px;
+  --dsg-radius-composer: 28px;
+  --dsg-motion-dur: 180ms;
+  --dsg-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+html[data-dsg='on'][data-dsg-atmosphere='off'] .dsg-atmosphere { display: none; }
+
+/* ---- light token layer --------------------------------------------------- */
+html[data-dsg='on'] body {
+  /* canvas + raised surfaces */
+  --dsw-alias-bg-base: transparent;
+  --dsw-alias-bg-layer-1: rgba(255, 255, 255, calc(0.56 * var(--dsg-glass, 1)));
+  --dsw-alias-bg-layer-2: rgba(255, 255, 255, calc(0.66 * var(--dsg-glass, 1)));
+  --dsw-alias-bg-layer-3: rgba(255, 255, 255, calc(0.76 * var(--dsg-glass, 1)));
+  --dsw-alias-bg-overlay: rgba(248, 251, 255, calc(0.82 * var(--dsg-glass, 1)));
+  --dsw-alias-bg-module-platform: rgba(255, 255, 255, calc(0.5 * var(--dsg-glass, 1)));
+  --dsw-alias-bg-multi-select: rgba(255, 255, 255, calc(0.42 * var(--dsg-glass, 1)));
+
+  /* specific surfaces */
+  --dsw-specific-sidebar-fill: rgba(255, 255, 255, calc(0.34 * var(--dsg-glass, 1)));
+  --dsw-specific-input-major: rgba(255, 255, 255, calc(0.62 * var(--dsg-glass, 1)));
+  --dsw-specific-bubble: rgba(236, 242, 255, calc(0.62 * var(--dsg-glass, 1)));
+  --dsw-specific-menu: rgba(248, 251, 255, calc(0.7 * var(--dsg-glass, 1)));
+  --dsw-menu-surface-fill: rgba(248, 251, 255, calc(0.68 * var(--dsg-glass, 1)));
+  --dsw-alias-menu-group-header-fill: rgba(248, 251, 255, calc(0.9 * var(--dsg-glass, 1)));
+  --dsw-specific-selector: rgba(255, 255, 255, calc(0.55 * var(--dsg-glass, 1)));
+  --dsw-specific-tip: rgba(255, 255, 255, calc(0.62 * var(--dsg-glass, 1)));
+  --dsw-specific-sidebar-nav-item-active: rgba(255, 255, 255, calc(0.54 * var(--dsg-glass, 1)));
+  --dsw-specific-sidebar-nav-item-hover: rgba(255, 255, 255, calc(0.34 * var(--dsg-glass, 1)));
+  --dsw-specific-sidebar-nav-item-active-accent: var(--dsg-blue-soft);
+
+  /* borders: blue-grey hairlines instead of neutral black */
+  --dsw-alias-border-l1: rgba(56, 88, 158, 0.1);
+  --dsw-alias-border-l2: rgba(56, 88, 158, 0.16);
+  --dsw-alias-border-l3: rgba(56, 88, 158, 0.2);
+  --dsw-alias-border-l4: rgba(56, 88, 158, 0.26);
+  --dsw-elevation-stroke-color: rgba(56, 88, 158, 0.18);
+
+  /* DeepSeek blue is already the brand; align interaction states to it */
+  --dsw-alias-state-business-primary: var(--dsg-blue);
+  --dsw-alias-link: var(--dsg-blue);
+  --dsw-alias-brand-primary-new-colorprimary-new-color: var(--dsg-blue);
+  --dsw-alias-interactive-bg-hover: rgba(77, 107, 254, 0.07);
+  --dsw-alias-interactive-bg-active: rgba(77, 107, 254, 0.12);
+  --dsw-alias-interactive-bg-hover-accent: var(--dsg-blue-soft);
+  --dsw-alias-state-business-tertiary: rgba(77, 107, 254, 0.1);
+
+  /* content surfaces */
+  --dsw-alias-markdown-code-block: rgba(255, 255, 255, calc(0.58 * var(--dsg-glass, 1)));
+  --dsw-alias-markdown-code-block-banner: rgba(245, 249, 255, calc(0.7 * var(--dsg-glass, 1)));
+  --dsw-alias-markdown-inline-code: rgba(77, 107, 254, 0.08);
+  --dsw-alias-markdown-citation: rgba(255, 255, 255, calc(0.5 * var(--dsg-glass, 1)));
+  --dsw-alias-markdown-tag: rgba(77, 107, 254, 0.08);
+  --dsw-alias-turn-trigger-bg: rgba(255, 255, 255, calc(0.5 * var(--dsg-glass, 1)));
+  --dsw-alias-turn-trigger-bg-hover: rgba(255, 255, 255, calc(0.66 * var(--dsg-glass, 1)));
+  --dsw-alias-settings-card-fill: rgba(255, 255, 255, calc(0.56 * var(--dsg-glass, 1)));
+  --dsw-alias-settings-card-stroke: rgba(56, 88, 158, 0.16);
+
+  /* menus: DeepSeek uses a real frosted menu */
+  --dsw-menu-backdrop-filter: blur(var(--dsg-card-blur)) saturate(var(--dsg-sat));
+
+  /* shadows: diffuse blue-tinted daylight instead of black */
+  --dsw-shadow-lv1: 0 2px 6px rgba(44, 74, 140, 0.06);
+  --dsw-shadow-lv2: 0 6px 18px rgba(44, 74, 140, 0.08);
+  --dsw-shadow-lv3: 0 18px 48px rgba(44, 74, 140, 0.12);
+  --dsw-elevation-panel: var(--dsw-elevation-stroke), 0 6px 20px rgba(44, 74, 140, 0.08), 0 0 24px rgba(44, 74, 140, 0.04);
+  --dsw-elevation-prominent: var(--dsw-elevation-stroke), 0 10px 34px rgba(44, 74, 140, 0.12), 0 0 30px rgba(44, 74, 140, 0.06);
+  --dsw-elevation-soft: var(--dsw-elevation-stroke), 0 8px 28px rgba(44, 74, 140, 0.08), 0 0 28px rgba(44, 74, 140, 0.05);
+
+  /* darker secondary text keeps contrast over glass */
+  --dsw-alias-label-primary: #16202f;
+  --dsw-alias-label-secondary: #4d5b73;
+  --dsw-alias-label-tertiary: #6b7a93;
+  --dsw-alias-label-caption: #8391a8;
+}
+
+/* ---- dark token layer ---------------------------------------------------- */
+html[data-dsg='on'] body[data-ds-dark-theme] {
+  --dsw-alias-bg-layer-1: rgba(22, 33, 58, calc(0.6 * var(--dsg-glass, 1)));
+  --dsw-alias-bg-layer-2: rgba(26, 38, 66, calc(0.68 * var(--dsg-glass, 1)));
+  --dsw-alias-bg-layer-3: rgba(30, 44, 76, calc(0.76 * var(--dsg-glass, 1)));
+  --dsw-alias-bg-overlay: rgba(20, 30, 54, calc(0.86 * var(--dsg-glass, 1)));
+  --dsw-alias-bg-module-platform: rgba(22, 33, 58, calc(0.5 * var(--dsg-glass, 1)));
+  --dsw-alias-bg-multi-select: rgba(28, 40, 68, calc(0.46 * var(--dsg-glass, 1)));
+
+  --dsw-specific-sidebar-fill: rgba(14, 22, 40, calc(0.4 * var(--dsg-glass, 1)));
+  --dsw-specific-input-major: rgba(24, 36, 62, calc(0.66 * var(--dsg-glass, 1)));
+  --dsw-specific-bubble: rgba(38, 54, 92, calc(0.62 * var(--dsg-glass, 1)));
+  --dsw-specific-menu: rgba(20, 30, 52, calc(0.76 * var(--dsg-glass, 1)));
+  --dsw-menu-surface-fill: rgba(20, 30, 52, calc(0.72 * var(--dsg-glass, 1)));
+  --dsw-alias-menu-group-header-fill: rgba(20, 30, 52, calc(0.92 * var(--dsg-glass, 1)));
+  --dsw-specific-selector: rgba(28, 40, 68, calc(0.6 * var(--dsg-glass, 1)));
+  --dsw-specific-tip: rgba(24, 36, 62, calc(0.66 * var(--dsg-glass, 1)));
+  --dsw-specific-sidebar-nav-item-active: rgba(255, 255, 255, calc(0.08 * var(--dsg-glass, 1)));
+  --dsw-specific-sidebar-nav-item-hover: rgba(255, 255, 255, calc(0.05 * var(--dsg-glass, 1)));
+  --dsw-specific-sidebar-nav-item-active-accent: rgba(77, 107, 254, 0.26);
+
+  --dsw-alias-border-l1: rgba(150, 180, 255, 0.1);
+  --dsw-alias-border-l2: rgba(150, 180, 255, 0.16);
+  --dsw-alias-border-l3: rgba(150, 180, 255, 0.22);
+  --dsw-alias-border-l4: rgba(150, 180, 255, 0.28);
+  --dsw-elevation-stroke-color: rgba(150, 180, 255, 0.2);
+
+  --dsw-alias-markdown-code-block: rgba(12, 20, 36, calc(0.55 * var(--dsg-glass, 1)));
+  --dsw-alias-markdown-code-block-banner: rgba(20, 30, 52, calc(0.7 * var(--dsg-glass, 1)));
+  --dsw-alias-markdown-inline-code: rgba(120, 150, 255, 0.14);
+  --dsw-alias-markdown-citation: rgba(24, 36, 62, calc(0.5 * var(--dsg-glass, 1)));
+  --dsw-alias-markdown-tag: rgba(120, 150, 255, 0.14);
+  --dsw-alias-turn-trigger-bg: rgba(26, 38, 66, calc(0.5 * var(--dsg-glass, 1)));
+  --dsw-alias-turn-trigger-bg-hover: rgba(30, 44, 76, calc(0.68 * var(--dsg-glass, 1)));
+  --dsw-alias-settings-card-fill: rgba(22, 33, 58, calc(0.6 * var(--dsg-glass, 1)));
+  --dsw-alias-settings-card-stroke: rgba(150, 180, 255, 0.18);
+
+  --dsw-alias-label-primary: #eef3ff;
+  --dsw-alias-label-secondary: #b9c6df;
+  --dsw-alias-label-tertiary: #93a3c0;
+  --dsw-alias-label-caption: #7d8da9;
+}
+
+/* ---- global texture: selection, focus, scrollbar ------------------------- */
+html[data-dsg='on'] ::selection {
+  background: rgba(77, 107, 254, 0.22);
+}
+html[data-dsg='on'] body :focus-visible:not(:read-write) {
+  outline-color: var(--dsg-blue-ring) !important;
+}
+html[data-dsg='on'] * {
+  scrollbar-color: rgba(77, 107, 254, 0.28) transparent;
+}
+html[data-dsg='on'] ::-webkit-scrollbar-thumb {
+  background: rgba(77, 107, 254, 0.24) !important;
+  border-radius: 999px;
+}
+html[data-dsg='on'] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(77, 107, 254, 0.38) !important;
+}

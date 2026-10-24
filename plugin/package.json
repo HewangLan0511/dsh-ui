@@ -1,0 +1,38 @@
+{
+  "name": "dsh-ui-deepseek",
+  "version": "0.1.0",
+  "private": true,
+  "description": "DeepSeek-web inspired translucent glass UI for DeepSeek Harness: airy ambient background, liquid-glass surfaces, readability-tiered blur for cards, popups and detail panels.",
+  "type": "module",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/client.js",
+    "locale/*.json",
+    "icon.svg",
+    "cordis.patch.yml"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-theme"
+      ]
+    }
+  },
+  "peerDependencies": {
+    "react": "^18.2.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

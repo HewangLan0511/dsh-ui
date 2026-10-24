@@ -1,0 +1,7 @@
+.ref/
+node_modules/
+plugin/node_modules/
+plugin/lib/client.generated.js
+*.log
+.tmp/
+screenshots/*.tmp.png

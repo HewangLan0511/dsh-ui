@@ -1,0 +1,107 @@
+- id: ui-settings-general
+  name: '@deepseek-ai/dsh-client-ui-settings-general'
+  config:
+    welcomeNoticeVersion: 2026-08-13.1
+- id: ui-theme
+  name: '@deepseek-ai/dsh-client-ui-theme'
+  config:
+    preference: dark
+- id: agent-default-model
+  name: '@deepseek-ai/dsh-agent-default-model'
+  config:
+    provider: deepseek-official
+    model: deepseek-flash
+    reasoningEffort: high
+- id: ui-chat
+  name: '@deepseek-ai/dsh-client-ui-chat'
+  config:
+    transcriptView: standard
+    performanceUsage: detailed
+- id: ui-settings
+  name: '@deepseek-ai/dsh-client-ui-settings'
+  config:
+    enabled: true
+- id: ui-settings-account
+  name: '@deepseek-ai/dsh-client-ui-settings-account'
+  config:
+    version: 1
+    step: done
+    usage: detailed
+    developerTools: true
+    purpose: null
+    process: standard
+    completion: api-key
+- id: wallpaper-engine
+  disabled: false
+- id: permission
+  name: '@deepseek-ai/dsh-permission-presets'
+  config:
+    presets:
+      read-only:
+        sandbox: read-only
+        approval: ask
+      workspace-write:
+        sandbox: workspace-write
+        approval: ask
+      danger-full-access:
+        sandbox: danger-full-access
+        approval: never
+    defaultPreset: workspace-write
+- id: agent-preset-registry
+  name: '@deepseek-ai/dsh-agent-preset-registry'
+  config:
+    default: standard
+    selectedDefault: cordis
+- id: image-gen
+  name: dsh-image-gen
+  config:
+    provider: seedream
+
+# === qq-bridge MCP BEGIN ===
+# 由 scripts/setup-dsh.mjs 维护；这段区块会被整体替换，请勿手工编辑内部条目。
+- insert:
+    - id: mcp-snowluma
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: snowluma
+        transport: stdio
+        command: 'C:\Program Files\nodejs\node.exe'
+        args:
+          - 'D:\dsh_workplace\qq-bridge\src\mcp-snowluma-safe.js'
+        toolCallTimeoutMs: 725000
+- insert:
+    - id: mcp-snowluma-host
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: snowluma-host
+        transport: stdio
+        command: 'C:\Program Files\nodejs\node.exe'
+        args:
+          - 'D:\dsh_workplace\qq-bridge\src\mcp-host-server.js'
+- insert:
+    - id: mcp-web-search-safe
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: web-search-safe
+        transport: stdio
+        command: 'C:\Program Files\nodejs\node.exe'
+        args:
+          - 'D:\dsh_workplace\qq-bridge\src\mcp-web-search-safe.js'
+- id: qq-mode
+  name: qq-mode-console
+  config:
+    mode: reserved2
+
+# === qq-bridge MCP END ===
+
+# MCP 连接器：远端目录源镜像覆盖。
+# 本机网络无法直连 cdn.jsdelivr.net 与 raw.githubusercontent.com（ECONNRESET），
+# 这里改用 ghproxy.net 镜像，否则市场只显示随包内置的 4 张企查查卡片。
+# 删除本段即恢复插件默认目录源；也可把 catalogUrl 置为 '' 走纯离线模式。
+- id: mcp-connector
+  config:
+    catalogUrl: 'https://ghproxy.net/https://raw.githubusercontent.com/duhu2000/dsh-mcp-connector-registry/main/catalog.json'
+- id: dsh-context
+  name: dsh-context
+  config:
+    defaultOverviewRange: 30d

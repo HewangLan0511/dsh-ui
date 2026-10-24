@@ -1,0 +1,179 @@
+/* ============================================================================
+   95 plugin settings panel (rendered inside Settings → settings.section)
+   Uses its own .dsg-* vocabulary so it never collides with shipped UI.
+   ========================================================================== */
+html[data-dsg='on'] .dsg-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 760px;
+  color: var(--dsw-alias-label-primary);
+}
+html[data-dsg='on'] .dsg-settings-head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+html[data-dsg='on'] .dsg-settings-title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+html[data-dsg='on'] .dsg-settings-sub {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--dsw-alias-label-tertiary);
+}
+html[data-dsg='on'] .dsg-settings-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 18px;
+  border-radius: var(--dsg-radius-card);
+  background: rgba(255, 255, 255, calc(0.5 * var(--dsg-glass, 1)));
+  border: 1px solid var(--dsw-alias-border-l2);
+  -webkit-backdrop-filter: blur(var(--dsg-card-blur)) saturate(var(--dsg-sat));
+  backdrop-filter: blur(var(--dsg-card-blur)) saturate(var(--dsg-sat));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    0 10px 30px rgba(44, 74, 140, 0.08);
+}
+html[data-dsg='on'] body[data-ds-dark-theme] .dsg-settings-body {
+  background: rgba(22, 33, 58, calc(0.6 * var(--dsg-glass, 1)));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 14px 36px rgba(0, 0, 0, 0.32);
+}
+html[data-dsg='on'] .dsg-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--dsw-alias-border-l1);
+}
+html[data-dsg='on'] .dsg-row:last-child {
+  border-bottom: 0;
+}
+html[data-dsg='on'] .dsg-row-text {
+  min-width: 0;
+}
+html[data-dsg='on'] .dsg-row-label {
+  font-size: 13px;
+  font-weight: 500;
+}
+html[data-dsg='on'] .dsg-row-hint {
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--dsw-alias-label-tertiary);
+}
+html[data-dsg='on'] .dsg-row-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+html[data-dsg='on'] .dsg-slider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+html[data-dsg='on'] .dsg-slider input[type='range'] {
+  width: 148px;
+  accent-color: var(--dsg-blue);
+}
+html[data-dsg='on'] .dsg-slider-value {
+  width: 40px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--dsw-alias-label-secondary);
+  text-align: right;
+}
+html[data-dsg='on'] .dsg-seg {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border-radius: 999px;
+  background: rgba(77, 107, 254, 0.07);
+  border: 1px solid var(--dsw-alias-border-l1);
+}
+html[data-dsg='on'] .dsg-seg-btn {
+  border: 0;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12px;
+  line-height: 1;
+  padding: 7px 13px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background var(--dsg-motion-dur) var(--dsg-ease), color var(--dsg-motion-dur) var(--dsg-ease);
+}
+html[data-dsg='on'] .dsg-seg-btn:hover {
+  color: var(--dsw-alias-label-primary);
+  background: rgba(255, 255, 255, 0.5);
+}
+html[data-dsg='on'] .dsg-seg-btn.is-on {
+  color: var(--dsg-blue);
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(44, 74, 140, 0.12);
+}
+html[data-dsg='on'] body[data-ds-dark-theme] .dsg-seg-btn.is-on {
+  background: rgba(77, 107, 254, 0.28);
+  color: #dce6ff;
+}
+html[data-dsg='on'] .dsg-switch {
+  position: relative;
+  width: 44px;
+  height: 26px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  background: rgba(120, 140, 180, 0.22);
+  cursor: pointer;
+  transition: background var(--dsg-motion-dur) var(--dsg-ease);
+}
+html[data-dsg='on'] .dsg-switch .dsg-switch-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(20, 40, 90, 0.24);
+  transition: transform var(--dsg-motion-dur) var(--dsg-ease);
+}
+html[data-dsg='on'] .dsg-switch.is-on {
+  background: var(--dsg-blue);
+  border-color: transparent;
+}
+html[data-dsg='on'] .dsg-switch.is-on .dsg-switch-thumb {
+  transform: translateX(18px);
+}
+html[data-dsg='on'] .dsg-settings-foot {
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 0 10px;
+}
+html[data-dsg='on'] .dsg-btn {
+  border: 1px solid var(--dsw-alias-border-l2);
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all var(--dsg-motion-dur) var(--dsg-ease);
+}
+html[data-dsg='on'] .dsg-btn:hover {
+  color: var(--dsg-blue);
+  border-color: var(--dsg-blue-ring);
+  background: #fff;
+}
+html[data-dsg='on'] body[data-ds-dark-theme] .dsg-btn {
+  background: rgba(255, 255, 255, 0.06);
+}
+html[data-dsg='on'] body[data-ds-dark-theme] .dsg-btn:hover {
+  background: rgba(77, 107, 254, 0.22);
+  color: #dce6ff;
+}
