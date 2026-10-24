@@ -29,18 +29,36 @@ html[data-dsg='on'] div:has(> [data-slot='sidebar'])::before {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background-color: var(--dsg-fill-l2);
-  background-image: var(--dsg-sheen-l2);
+  /* Slightly blue-tinted glass: a pure-white fill next to the #eaf1fb titlebar and
+     the airy conversation atmosphere read as a hard paper slab. 10% of the titlebar
+     hue keeps the column in the same family without dulling text. */
+  background-color: color-mix(in srgb, var(--dsg-fill-l2) 86%, #dfeafd 14%);
+  /* Top fade: the window titlebar (solid #eaf1fb across the full width) meets the
+     sidebar directly under it, so carry that tone ~150px down and let it dissolve
+     into the glass — a gradient instead of a visible horizontal seam. */
+  background-image:
+    linear-gradient(180deg,
+      #eaf1fb 0px,
+      rgba(234, 241, 251, 0.55) 56px,
+      rgba(234, 241, 251, 0) 176px),
+    var(--dsg-sheen-l2);
   /* 内侧白光 + 柔和内投影：挂在 ::before 上才会画在填充层之上 */
   box-shadow:
-    inset -1px 0 0 rgba(255, 255, 255, 0.5),
-    inset -26px 0 30px -30px rgba(44, 74, 140, 0.32);
+    inset -1px 0 0 rgba(255, 255, 255, 0.36),
+    inset -26px 0 30px -30px rgba(44, 74, 140, 0.28);
   -webkit-backdrop-filter: var(--dsg-backdrop-l2);
   backdrop-filter: var(--dsg-backdrop-l2);
 }
 html[data-dsg='on'] body[data-ds-dark-theme] div:has(> [data-slot='sidebar'])::before {
+  background-color: color-mix(in srgb, var(--dsg-fill-l2) 88%, #16304f 12%);
+  background-image:
+    linear-gradient(180deg,
+      #0b1322 0px,
+      rgba(11, 19, 34, 0.5) 56px,
+      rgba(11, 19, 34, 0) 176px),
+    var(--dsg-sheen-l2);
   box-shadow:
-    inset -1px 0 0 rgba(255, 255, 255, 0.08),
+    inset -1px 0 0 rgba(255, 255, 255, 0.06),
     inset -26px 0 30px -30px rgba(0, 0, 0, 0.5);
 }
 /* 右侧玻璃厚度：一条很窄的纵向高光，让左栏从背景里“立”起来 */
@@ -105,13 +123,17 @@ html[data-dsg='on'] [data-slot='sidebar'] button[class*='_newSession'] {
   margin: 0 2px 12px;
   border-radius: 12px;
   border: 0.5px solid var(--dsg-hairline-soft);
-  background: var(--dsg-capsule) !important;
+  /* A flat white capsule on a near-white column disappears; a soft vertical
+     gradient + a slightly stronger hairline keeps it a distinct glass chip that
+     still melts into the tinted sidebar top. */
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.66), rgba(255, 255, 255, 0.36)) !important;
   color: var(--dsw-alias-label-primary);
   font-size: 13.5px;
   font-weight: 500;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.55),
-    0 1px 2px rgba(23, 42, 84, 0.06);
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    0 1px 2px rgba(23, 42, 84, 0.05);
   transition:
     background-color 160ms var(--dsg-ease),
     box-shadow 160ms var(--dsg-ease),
@@ -119,10 +141,11 @@ html[data-dsg='on'] [data-slot='sidebar'] button[class*='_newSession'] {
     border-color 160ms var(--dsg-ease);
 }
 html[data-dsg='on'] [data-slot='sidebar'] button[class*='_newSession']:hover {
-  background: var(--dsg-capsule-hover) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(255, 255, 255, 0.52)) !important;
   border-color: rgba(77, 107, 254, 0.22);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
     0 4px 12px -2px rgba(23, 42, 84, 0.14),
     0 1px 2px rgba(23, 42, 84, 0.06);
   transform: translateY(-1px);
@@ -375,7 +398,15 @@ html[data-dsg='on'] body[data-ds-dark-theme] [data-slot='sidebar'] nav[class*='_
   box-shadow: inset 0 0 0 0.5px rgba(123, 147, 255, 0.22);
 }
 html[data-dsg='on'] body[data-ds-dark-theme] [data-slot='sidebar'] button[class*='_newSession'] {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.04)) !important;
+  border-color: rgba(150, 180, 255, 0.16);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.14),
     0 1px 2px rgba(0, 0, 0, 0.35);
+}
+html[data-dsg='on'] body[data-ds-dark-theme] [data-slot='sidebar'] button[class*='_newSession']:hover {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.07)) !important;
+  border-color: rgba(150, 180, 255, 0.28);
 }

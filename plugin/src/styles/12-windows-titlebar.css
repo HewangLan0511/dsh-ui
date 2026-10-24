@@ -34,7 +34,7 @@ html[data-dsg='on'] body[data-ds-dark-theme] > span[style*='--dsw-specific-sideb
 html[data-dsg='on'][data-windows-titlebar] [data-slot='root'] > [class*='_frame']::before {
   background-color: var(--dsg-titlebar-solid) !important;
   background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 60%) !important;
-  border-bottom: 0.5px solid var(--dsg-border-hair, rgba(56, 88, 158, 0.14)) !important;
+  border-bottom: 0.5px solid rgba(56, 88, 158, 0.06) !important;
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
 }
