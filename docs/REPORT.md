@@ -434,7 +434,7 @@ effAlpha = floor + a · (1 − floor)        floor = 0.45（浅）/ 0.59（深�
 
 ---
 
-## 15. 悬停 tooltip 全面玻璃化（2026-10-24 第九轮，`v1.9-ui`）
+## 15. 悬停 tooltip 全面玻璃化（2026-10-24 第九 / 十轮，`v1.9-ui` → `v1.10-ui`）
 
 用户反馈上下文趋势图的悬停详情卡"文字重叠看不清"，并要求把**所有**"光标悬停弹出、
 移走消失"的 tooltip 统一改成与整体一致的玻璃质感（透明 + 模糊 + 字要看清）。
@@ -451,15 +451,16 @@ effAlpha = floor + a · (1 − floor)        floor = 0.45（浅）/ 0.59（深�
 ### 15.2 修法（`50-overlays.css §5`）
 
 - 新增共享配方 `--dsg-tip-fill / --dsg-tip-fill-chart / --dsg-tip-ink / --dsg-tip-shadow`：
-  - 原生 tooltip：浅 74% 白、深 80% `#0d1524` + `blur(16px) saturate(1.45)` + 釉 + 0.5px 发丝边；
-  - 图表卡加厚到 **78% / 84%**、霜 ×1.1，并 `z-index: 40`（压住绘图标记）；
+  - 原生 tooltip：浅 94% 白 / 深 94% `#0d1524` + `blur(16px) saturate(1.45)` + 釉 + 0.5px 发丝边；
+  - 图表卡加厚到 **96%**、霜 ×1.1，并 `z-index: 40`（压住绘图标记）；
   - 文字统一 `--dsg-tip-ink = --dsw-alias-label-primary`；快捷键 pill 改中性底，不再是白字压深底；
 - 覆盖范围：`[role='tooltip']`、`.lc-tip`、`.lc-chart-tip`、`[class*='_chart-tip']`、`[class*='_chartTip']`；
-- 无 `backdrop-filter` 环境：填充率提到 95%/96%，保证仍然挡得住背景；
+- 无 `backdrop-filter` 环境：填充率提到 98%，保证仍然挡得住背景；
 - **悬停预览卡（HoverCard）不动**：文件/会话预览里有图片，玻璃化会把预览洗白，保持宿主材质。
 
-> 为什么填充率是 74%/78% 而不是更低：卡片要盖住底下 12px 的坐标文字。16px 霜把底图洗成色块，
-> 74% 白叠加后底层墨色只剩 ~5% 权重，正文对比度仍在 4.5:1 以上；再低就会重新出现"透字"。
+> 填充率两轮调整：v1.9 先用 74%/78%（保留更多透明感），用户反馈仍偏透，v1.10 改成
+> **94%/96% 几乎不透明**——玻璃只剩 ~4% 的通透与霜/釉/发丝边，底下 12px 坐标文字彻底不透出，
+> 这也是"能看清字"的最终取舍。
 
 ### 15.3 验证
 
@@ -471,7 +472,7 @@ effAlpha = floor + a · (1 − floor)        floor = 0.45（浅）/ 0.59（深�
 
 | 场景 | 截图 |
 |---|---|
-| 浅色·图表悬停卡（高填充玻璃，坐标字不再透出） | [`assets/final/tooltip-glass-light.png`](assets/final/tooltip-glass-light.png) |
+| 浅色·图表悬停卡（几乎不透明玻璃，坐标字不再透出） | [`assets/final/tooltip-glass-light.png`](assets/final/tooltip-glass-light.png) |
 | 深色·同上 | [`assets/final/tooltip-glass-dark.png`](assets/final/tooltip-glass-dark.png) |
 
 

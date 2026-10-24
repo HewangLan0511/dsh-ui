@@ -198,33 +198,33 @@ html[data-dsg='on'] [class*='_preview']:has(> [class*='_previewPrompt']) {
 }
 
 /* ============================================================================
-   5. tooltips — L2 glass plate (v1.9)
+   5. tooltips — near-opaque glass plate (v1.10)
    ----------------------------------------------------------------------------
-   Every hover-only tooltip shares one glass recipe:
+   Every hover-only tooltip shares one recipe:
      · DSH primitive tooltips            → [role='tooltip']
      · dsh-context chart hover tips      → .lc-tip / .lc-chart-tip
      · other plugin chart tips           → [class*='chart-tip'] / [class*='chartTip']
-   The fill is deliberately high (74% light / 78% dark) so busy chart labels
-   underneath can never bleed through the plate — the ink stays readable — while
-   the 16px frost + sheen keeps the glass look. Chart tips get a slightly
-   stronger fill because they sit on the densest surface (stacked area charts).
+   User feedback (v1.10): make them almost opaque — readable text wins, the plate
+   keeps only ~4% translucency plus the 16px frost, sheen and hairline so it still
+   reads as glass instead of a flat white box. Chart tips sit on the densest
+   surface, so they are 96% instead of 94%.
    ========================================================================== */
 html[data-dsg='on'] {
-  --dsg-tip-fill: color-mix(in srgb, #ffffff 74%, transparent);
-  --dsg-tip-fill-chart: color-mix(in srgb, #ffffff 78%, transparent);
-  --dsg-tip-border: rgba(255, 255, 255, 0.62);
+  --dsg-tip-fill: color-mix(in srgb, #ffffff 94%, transparent);
+  --dsg-tip-fill-chart: color-mix(in srgb, #ffffff 96%, transparent);
+  --dsg-tip-border: rgba(255, 255, 255, 0.72);
   --dsg-tip-ink: var(--dsw-alias-label-primary);
   --dsg-tip-shadow:
-    0 12px 30px -14px rgba(23, 48, 108, 0.42),
-    0 2px 6px rgba(23, 48, 108, 0.1);
+    0 12px 30px -14px rgba(23, 48, 108, 0.38),
+    0 2px 6px rgba(23, 48, 108, 0.09);
 }
 html[data-dsg='on'] body[data-ds-dark-theme] {
-  --dsg-tip-fill: color-mix(in srgb, #0d1524 80%, transparent);
-  --dsg-tip-fill-chart: color-mix(in srgb, #0d1524 84%, transparent);
-  --dsg-tip-border: rgba(255, 255, 255, 0.16);
+  --dsg-tip-fill: color-mix(in srgb, #0d1524 94%, transparent);
+  --dsg-tip-fill-chart: color-mix(in srgb, #0d1524 96%, transparent);
+  --dsg-tip-border: rgba(255, 255, 255, 0.18);
   --dsg-tip-shadow:
-    0 14px 34px -16px rgba(0, 0, 0, 0.66),
-    0 2px 8px rgba(0, 0, 0, 0.34);
+    0 14px 34px -16px rgba(0, 0, 0, 0.6),
+    0 2px 8px rgba(0, 0, 0, 0.32);
 }
 
 html[data-dsg='on']
@@ -279,15 +279,15 @@ html[data-dsg='on'] :is(.lc-chart-tip, [class*='_chart-tip'], [class*='_chartTip
   color: var(--dsw-alias-label-secondary);
 }
 
-/* no backdrop-filter: raise the fill so the plate still blocks what is behind */
+/* no backdrop-filter: fill is already near-opaque, just push the last percents */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   html[data-dsg='on']
     :is([role='tooltip'], .lc-tip, .lc-chart-tip, [class*='_chart-tip'], [class*='_chartTip']) {
-    background-color: color-mix(in srgb, #ffffff 95%, transparent) !important;
+    background-color: color-mix(in srgb, #ffffff 98%, transparent) !important;
   }
   html[data-dsg='on'] body[data-ds-dark-theme]
     :is([role='tooltip'], .lc-tip, .lc-chart-tip, [class*='_chart-tip'], [class*='_chartTip']) {
-    background-color: color-mix(in srgb, #0d1524 96%, transparent) !important;
+    background-color: color-mix(in srgb, #0d1524 98%, transparent) !important;
   }
 }
 

@@ -113,9 +113,9 @@ node tools/build-plugin.mjs     # 合并 src/styles/*.css（按文件名排序�
    `50-overlays.css §5`：
    - 选择器：`[role='tooltip']`（DSH 原生）· `.lc-tip` / `.lc-chart-tip`（dsh-context 图表）·
      `[class*='_chart-tip']` / `[class*='_chartTip']`（其他插件图表）；
-   - 配方：`--dsg-tip-fill`（浅 74% / 深 80%；图表卡 78% / 84%）+ `--dsg-blur-l2`（16px，
+   - 配方：`--dsg-tip-fill`（浅/深 94%；图表卡 96% — 几乎不透明）+ `--dsg-blur-l2`（16px，
      图表卡 ×1.1）+ `--dsg-sheen-l2` + 0.5px hairline + 轻投影；墨色用 `--dsg-tip-ink`；
    - 图表卡必须 `z-index: 40`，否则坐标文字会压到提示卡上；
-   - **禁止**降低填充率把文字透出来（对比度）；无 `backdrop-filter` 时用 95% 填充兜底；
+   - **禁止**降低填充率把文字透出来（对比度）；无 `backdrop-filter` 时用 98% 填充兜底；
    - 悬停预览卡（HoverCard：文件预览/会话预览）保持宿主材质 —— 玻璃会把预览图片洗掉。
 
