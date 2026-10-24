@@ -153,3 +153,21 @@ effAlpha = floor + a · (1 − floor)        floor = 0.45（浅）/ 0.59（深�
 
 > 备注：`titleBarOverlay` 的最终颜色仍由 Desktop 主进程决定；本插件通过“不透明探针 + 主动重测”保证它
 > 与玻璃 UI 同步。若 DSH Desktop 后续更新改了 preload 的探针实现，只需调整 12-windows-titlebar.css 的探针选择器。
+
+### 9.1 追加反馈修复（第二轮）：菜单色块与图标
+
+用户指出：
+1. 「应用 / 编辑」背后的色块与标题栏背景不一致（偏白矩形）；
+2. 左侧应使用截图所示的「分栏/侧栏」线条图标，而不是鲸标；线条颜色对齐主体风格、图标底与背景同色。
+
+根因与修法：
+- 色块来自 `50-overlays.css` 的 `html[data-dsg='on'] [data-windows-menu] { background-color: var(--dsw-alias-bg-layer-3) }`，
+  它会命中 preload 注入的 Shadow DOM 菜单宿主，把 L3 白釉铺在标题栏上。
+  在 `12-windows-titlebar.css` 内以 `background: transparent !important` 覆盖（12 先加载、50 后加载，因此必须带 `!important`）。
+- 图标改为纯线条「panel left」SVG，通过 CSS mask 着色：浅色 `var(--dsg-blue)`（#4d6bfe），深色 `#7aaaff`；
+  图标 18×18、位于菜单条左 42px，背景透明。
+- 像素验证：浅色标题栏左侧 `rgb(235,242,251)`，菜单区同为 `rgb(235,242,251)`，右侧控件区 `rgb(230,237,247)`；三块已同色。
+
+![标题栏·浅色（线条图标版）](assets/final/titlebar-light.png)
+
+> 深色使用同一套规则（`#7aaaff` 线条 + `#0b1322` 标题栏），本次因用户正在输入未再次切换深色截图。
