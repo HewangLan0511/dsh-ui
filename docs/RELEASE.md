@@ -25,39 +25,25 @@ node tools/release.mjs
 - `LICENSE` 在仓库根与 `plugin/` 各一份（npm 包内读取 `plugin/LICENSE`）；
 - 工作区干净（`git status`），HEAD 即要发布的提交。
 
-## 1. 上传 npm
+## 1. 上传 npm（已完成 · 2026-10-24）
+
+- 包：`dsh-skin-mistblue@1.0.0`，`latest` 指向 1.0.0，public；
+- 包页：<https://www.npmjs.com/package/dsh-skin-mistblue>；
+- 安装：`npm install dsh-skin-mistblue`（DSH 里按 bundle 加载，设置页出现「外观 · 雾蓝」）；
+- 校验：tarball shasum `3536f9225c2562a52807ed80f7cd58fafd79f52a`，9 个文件；
+  从 npm 安装后的 `lib/client.js` SHA-256 与仓库构建产物一致。
+
+> 过程记录：web 登录落下的 npm token 没有发布权限（403），
+> 最终用 npmjs.com 生成的 access token 完成发布。
+> registry 里还留着一个早期占位版本 `0.0.0-stage`（不是 `latest`，不会被 `npm install` 选中；
+> 如需清理可 `npm deprecate dsh-skin-mistblue@0.0.0-stage "placeholder"`）。
 
 ```powershell
-# 一次性登录（需要你的 npm 账号，带 2FA 时按提示输入）
-npm login
-npm whoami                      # 应输出你的 npm 用户名
-
-# 发布（在 plugin/ 目录；带 2FA 的账号会要求输入一次性密码）
-cd plugin
+# 后续版本发布（在 plugin/ 目录）
+npm version patch --no-git-tag-version
 npm publish --access public
 ```
 
-说明：
-
-- 包名 `dsh-skin-mistblue` 在 npm 上**未被占用**（2026-10-24 查询 404），可直接用；
-- 未 scoped 的包默认 public，`--access public` 只是显式声明；
-- 当前账号 `baiyu0511` 的登录态在发布时被 npm 拒绝：
-  `403 ... Two-factor authentication or granular access token with bypass 2fa enabled is required`。
-  诊断：`npm whoami` 正常、`npm token create` 需要交互密码、带假 OTP 的 publish 仍是同一个 403
-  —— 说明 **web 登录落下的 token 没有发布权限**（不是 OTP 问题）。两条路：
-  1. **换 token（推荐，可非交互）**：npmjs.com → 头像 → Access Tokens →
-     Generate New Token：
-     - Classic Token → **Automation**（最简单），或
-     - Granular Token → Permissions **Read and write**、Packages 选中 `dsh-skin-mistblue`、
-       需要时勾 **Bypass 2FA**；
-     然后本机执行 `npm config set //registry.npmjs.org/:_authToken <token>`（写入 `~/.npmrc`），
-     再 `npm publish --access public`。
-  2. **启用 2FA 后带 OTP 发布**：account settings 打开 two-factor，之后
-     `npm publish --access public --otp=<当前 6 位码>`。
-- 发布后验证：
-  ```powershell
-  npm view dsh-skin-mistblue version dist.tarball
-  ```
 - 24 小时内可撤：`npm unpublish dsh-skin-mistblue@1.0.0 --force`（不推荐，撤包会影响已安装用户）。
 
 ## 2. 上传 GitHub（已完成 · 2026-10-24）

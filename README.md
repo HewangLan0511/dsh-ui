@@ -1,12 +1,16 @@
 # dsh-skin-mistblue（雾蓝）
 
+[![npm version](https://img.shields.io/npm/v/dsh-skin-mistblue?color=4d6bfe)](https://www.npmjs.com/package/dsh-skin-mistblue)
+[![license](https://img.shields.io/npm/l/dsh-skin-mistblue?color=4d6bfe)](LICENSE)
+[![release](https://img.shields.io/github/v/release/HewangLan0511/dsh-ui?color=4d6bfe)](https://github.com/HewangLan0511/dsh-ui/releases)
+
 > 把 DeepSeek 的海雾，做成 DSH 的一层玻璃。
 
 DeepSeek Harness（DSH）的玻璃质感皮肤：以 DeepSeek 网页端（deepseek.com）的视觉语言为基准，
 雾蓝渐变氛围背景 + 分层柔光玻璃，弹窗 / 显示卡 / 详情卡按可读性分级加雾，
 浅色与深色同构，设置页中英双语并跟随 DSH locale。
 
-**版本 `1.0.0` · MIT · 插件已安装在 desktop profile。**
+**版本 `1.0.0` · MIT · 已发布 npm：[`dsh-skin-mistblue`](https://www.npmjs.com/package/dsh-skin-mistblue)**
 
 ![Hero](docs/assets/final/hero.png)
 
@@ -45,16 +49,20 @@ DeepSeek Harness（DSH）的玻璃质感皮肤：以 DeepSeek 网页端（deepse
 
 ## 安装
 
-### 从 npm（发布后）
+### 从 npm 安装（已发布 `1.0.0`）
 
-在 DSH 的插件管理页（或 `plugin_manager`）里安装 bundle：
-
-```text
-dsh-skin-mistblue
+```powershell
+npm install dsh-skin-mistblue
 ```
 
-包内已声明 `dsh.bundle.patch`（`cordis.patch.yml`，bundle 行 id `mistblue`）与 web client 半部，
-安装后设置页出现「外观 · 雾蓝」。
+> 实际安装到 DSH 时，在**设置 → 插件 / 插件市场**或 `plugin_manager` 里以 bundle 形式安装
+> `dsh-skin-mistblue`（包内已声明 `dsh.bundle.patch`），装完设置页出现「外观 · 雾蓝」。
+> 只下载 tarball：`npm pack dsh-skin-mistblue`。
+
+- **npm 包页**：<https://www.npmjs.com/package/dsh-skin-mistblue>
+- **GitHub**：<https://github.com/HewangLan0511/dsh-ui>
+- **Release 附件**（tgz / src zip / SHA256SUMS）：
+  <https://github.com/HewangLan0511/dsh-ui/releases/tag/v1.0.0>
 
 ### 本地开发（本仓库）
 
@@ -69,9 +77,10 @@ node tools/build-plugin.mjs          # 内联 src/styles/*.css -> plugin/lib/cli
 ### 安装到新环境
 
 ```powershell
-# 1) 取包
+# 1) 取包（npm 或 Release 附件）
 npm pack dsh-skin-mistblue            # 或从 GitHub Release 下载 tgz
 # 2) DSH 插件管理页 / plugin_manager 安装该 bundle
+#    或 npm install dsh-skin-mistblue 后按包内 dsh.bundle 入口加载
 ```
 
 ## 设置
