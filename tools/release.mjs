@@ -22,7 +22,9 @@ const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm'
 
 const run = (cmd, args, cwd = root) => {
   console.log(`\n$ ${cmd} ${args.join(' ')}`)
-  execFileSync(cmd, args, { cwd, stdio: 'inherit' })
+  // npm.cmd is a batch shim; Node >= 20 refuses to spawn it without a shell.
+  const shell = process.platform === 'win32' && cmd === npmCmd
+  execFileSync(cmd, args, { cwd, stdio: 'inherit', shell })
 }
 
 if (!pkg.name || pkg.version !== version) {
