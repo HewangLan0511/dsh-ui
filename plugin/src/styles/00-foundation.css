@@ -24,9 +24,6 @@ html[data-dsg='on'] {
   --dsg-floor-base-light: 0.45;
   --dsg-floor-base-dark: 0.59;
   --dsg-floor: calc(var(--dsg-floor-base-light) * var(--dsg-fidelity));
-  /* L3 (popups / details / settings) never drops below the wallpaper-safe
-     floor: readable text is the point of the extra frost. */
-  --dsg-floor-l3: var(--dsg-floor-base-light);
 
   --dsg-a1: 0.06;
   --dsg-a2: 0.20;
@@ -40,6 +37,7 @@ html[data-dsg='on'] {
   /* Large-area surfaces: dialogs/settings are expensive to re-blur; menus are
      small but read better with a slightly softer frost. */
   --dsg-blur-dialog: calc(12px * var(--dsg-blur, 1));
+  --dsg-blur-l3-dialog: var(--dsg-blur-dialog);
   --dsg-blur-menu: calc(20px * var(--dsg-blur, 1));
 
   --dsg-motion: 1;
@@ -161,13 +159,14 @@ html[data-dsg='on'] body {
       var(--dsg-tint) calc(var(--dsg-floor) * 100%),
       color-mix(in srgb, var(--dsg-tint) calc(var(--dsg-a2) * 100%), transparent) calc((1 - var(--dsg-floor)) * 100%));
   --dsg-fill-l3: color-mix(in srgb,
-      var(--dsg-tint) calc(var(--dsg-floor-l3) * 100%),
-      color-mix(in srgb, var(--dsg-tint) calc(var(--dsg-a3) * 100%), transparent) calc((1 - var(--dsg-floor-l3)) * 100%));
+      var(--dsg-tint) calc(var(--dsg-floor-base-light) * 100%),
+      color-mix(in srgb, var(--dsg-tint) calc(var(--dsg-a3) * 100%), transparent) calc((1 - var(--dsg-floor-base-light)) * 100%));
 
   /* frost */
   --dsg-backdrop-l1: blur(var(--dsg-blur-l1)) saturate(var(--dsg-sat)) brightness(var(--dsg-bright)) contrast(var(--dsg-contrast));
   --dsg-backdrop-l2: blur(var(--dsg-blur-l2)) saturate(var(--dsg-sat)) brightness(var(--dsg-bright)) contrast(var(--dsg-contrast));
   --dsg-backdrop-l3: blur(var(--dsg-blur-l3)) saturate(var(--dsg-sat)) brightness(var(--dsg-bright)) contrast(var(--dsg-contrast));
+  --dsg-backdrop-l3-dialog: blur(var(--dsg-blur-dialog)) saturate(var(--dsg-sat)) brightness(var(--dsg-bright)) contrast(var(--dsg-contrast));
   --dsg-backdrop-dialog: blur(var(--dsg-blur-dialog)) saturate(var(--dsg-sat)) brightness(var(--dsg-bright)) contrast(var(--dsg-contrast));
   --dsg-backdrop-menu: blur(var(--dsg-blur-menu)) saturate(1.4);
   --dsg-backdrop-panel: blur(calc(10px * var(--dsg-blur, 1))) saturate(1.2) brightness(var(--dsg-bright));
@@ -278,8 +277,8 @@ html[data-dsg='on'] body[data-ds-dark-theme] {
       var(--dsg-tint) calc(var(--dsg-floor) * 100%),
       color-mix(in srgb, var(--dsg-tint) calc(var(--dsg-a2) * 100%), transparent) calc((1 - var(--dsg-floor)) * 100%));
   --dsg-fill-l3: color-mix(in srgb,
-      var(--dsg-tint) calc(var(--dsg-floor) * 100%),
-      color-mix(in srgb, var(--dsg-tint) calc(var(--dsg-a3) * 100%), transparent) calc((1 - var(--dsg-floor)) * 100%));
+      var(--dsg-tint) calc(var(--dsg-floor-base-dark) * 100%),
+      color-mix(in srgb, var(--dsg-tint) calc(var(--dsg-a3) * 100%), transparent) calc((1 - var(--dsg-floor-base-dark)) * 100%));
 
   --dsg-sheen-l1: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02) 38%, rgba(255, 255, 255, 0.01));
   --dsg-sheen-l2: linear-gradient(180deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.03) 38%, rgba(255, 255, 255, 0.01));

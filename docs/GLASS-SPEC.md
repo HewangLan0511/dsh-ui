@@ -59,6 +59,7 @@ body {
   --dsg-backdrop-l1: blur(20px) saturate(1.30) brightness(1.04) contrast(1.01);
   --dsg-backdrop-l2: blur(16px) saturate(1.30) brightness(1.04) contrast(1.01);
   --dsg-backdrop-l3: blur(10px) saturate(1.30) brightness(1.04) contrast(1.01);
+  --dsg-backdrop-l3-dialog: blur(12px) saturate(1.30) brightness(1.04) contrast(1.01);  /* 大面积 dialog 用，勿复用菜单 24px */
 
   /* 镜面高光（顶部加权） */
   --dsg-sheen-l1: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03) 38%, rgba(255,255,255,0.02));
@@ -590,7 +591,7 @@ body[data-ds-dark-theme] {
 |---|---|---|---|---|---|---|
 | **L1 内容面** | 聊天画布 / 页面容器 / 工具结果板 / 推理行 | 0.12 / 0.16 | **51.6% / 65.6%** | 20px | .10/.03@38%/.02 | `0 8px 24px rgba(2,6,23,.10)` |
 | **L2 卡片 / 工具卡** | 输入卡、消息气泡、提问/计划/审批卡、侧栏、内容卡 | 0.40 / 0.42 | **67.0% / 76.2%** | 16px | .16/.05@38%/.02 | `0 12px 40px rgba(0,0,0,.12)` |
-| **L3 弹窗 / 详情 / 设置** | dialog、设置整窗、右栏全屏、文档预览 | 0.72 / 0.72 | **84.6% / 88.5%** | 10px | .10/.03@38%/.05 | `0 24px 80px rgba(0,7,18,.30)` |
+| **L3 弹窗 / 详情 / 设置** | dialog、设置整窗、右栏全屏、文档预览 | 0.72 / 0.72 | **84.6% / 88.5%** | dialog 10–14（用 `--dsg-blur-l3-dialog`）／菜单 20–24（`--dsg-blur-l3`） | .10/.03@38%/.05 | `0 24px 80px rgba(0,7,18,.30)` |
 | L3 子权重 | 菜单/气泡层 ×1.00、dialog ×1.10、玻璃上的按钮 ×1.15 | — | 上限 **92%** | 同 L3 | 同 L3 | 同 L3 |
 
 **为什么 blur 是"越低层越糊"而不是"越浮越糊"**：对比度由 alpha 提供，不靠 blur；blur 只负责"化开壁纸"。WE 的实测取值就是反比于文字密度 —— 输入卡 9px、设置窗 8px、侧栏 8px、胶囊 8px、聊天全局 16px（上限 60）。**给 800px 的文字密集 dialog 上 32px 模糊，既不加对比度，又让整块面板每帧重算**（见 §5.9）。
@@ -805,7 +806,8 @@ body[data-ds-dark-theme] .dsg-aurora { opacity: .35; }   /* 深色档同理：�
 | `--dsg-floor-base-light` / `-dark` | `0.45` / `0.59` | WE 实测常量，**不许调**（调了 4.5:1 判据失效） |
 | `--dsg-floor` | `calc(base × fidelity)` | L1/L2 地板。**L3 不读它**（`fill-l3` 直接读 `--dsg-floor-base-*`）⇒ A 预设减薄不了弹窗 |
 | `--dsg-a1/a2/a3`（别名 `--dsg-alpha-l1/l2/l3`，两个名字等价） | `0.12 / 0.40 / 0.72` | 三级釉层 alpha（"雾量"滑杆）；`aN` 是实现里的规范名 |
-| `--dsg-blur-l1/l2/l3` | `20px / 16px / 12px`（建议 L3=10px） | 雾化半径，0 = 关霜 |
+| `--dsg-blur-l1/l2/l3` | `20px / 16px / 10px` | 雾化半径，0 = 关霜；**L1 大面不挂霜**，20px 只给页面级小面（实际推荐 6–8px） |
+| `--dsg-blur-l3-dialog` | `12px` | dialog / 设置窗 / 文档预览**专属**雾半径（10–14px）；**不许复用菜单的 `--dsg-blur-l3`（20–24px）**，见 §6.4b |
 | `--dsg-sat` / `--dsg-bright` / `--dsg-contrast` | `1.30` / `1.04` / `1.01` | **全局常量，不做分档** |
 | `--dsg-fill-l1/l2/l3` | `color-mix(...)` | 三级填充（已含地板） |
 | `--dsg-backdrop-l1/l2/l3` | `blur(...) saturate(...) brightness(...) contrast(...)` | 完整 `backdrop-filter` 值 |
@@ -859,6 +861,7 @@ body {
   --dsg-blur-l1: 20px;
   --dsg-blur-l2: 16px;
   --dsg-blur-l3: 10px;
+  --dsg-blur-l3-dialog: 12px;   /* dialog / 设置窗 / 文档预览专用；菜单仍用 --dsg-blur-l3 */
 
   --dsg-sat: 1.30;
   --dsg-bright: 1.04;
@@ -867,6 +870,7 @@ body {
   --dsg-backdrop-l1: blur(var(--dsg-blur-l1)) saturate(var(--dsg-sat)) brightness(var(--dsg-bright)) contrast(var(--dsg-contrast));
   --dsg-backdrop-l2: blur(var(--dsg-blur-l2)) saturate(var(--dsg-sat)) brightness(var(--dsg-bright)) contrast(var(--dsg-contrast));
   --dsg-backdrop-l3: blur(var(--dsg-blur-l3)) saturate(var(--dsg-sat)) brightness(var(--dsg-bright)) contrast(var(--dsg-contrast));
+  --dsg-backdrop-l3-dialog: blur(var(--dsg-blur-l3-dialog)) saturate(var(--dsg-sat)) brightness(var(--dsg-bright)) contrast(var(--dsg-contrast));
 
   /* 填充：地板 + 釉层（eff = floor + a·(1-floor)）。
      ⚠️ 「L3 不随 A 预设减薄」**不需要新 token**：L3 的地板槽位直接读 base 常量
@@ -997,12 +1001,12 @@ body[data-dsg-glass] div:has(> [data-slot="sidebar"])::before {
   -webkit-backdrop-filter: var(--dsg-backdrop-l2);
 }
 
-/* L3：dialog / 设置窗 */
+/* L3：dialog / 设置窗 —— 用**专属**的 12px 雾，不许复用菜单的 24px（§6.4b） */
 body[data-dsg-glass] [role="dialog"] {
   background-image: var(--dsg-sheen-l3);
   box-shadow: var(--dsg-bevel-l3);
-  backdrop-filter: var(--dsg-backdrop-l3);
-  -webkit-backdrop-filter: var(--dsg-backdrop-l3);
+  backdrop-filter: var(--dsg-backdrop-l3-dialog);
+  -webkit-backdrop-filter: var(--dsg-backdrop-l3-dialog);
 }
 
 /* L3：菜单通道（改 token，不画板） */
@@ -1078,7 +1082,7 @@ body[data-dsg-fallback] [data-approval-key] [class*="_card"] {
 | L1 页面级大面 | **不挂霜** | — | 画布级 backdrop 每帧重算（§5.9）；`--dsg-blur-l1: 6px` 只给"页面级小面板"（如 header、sticky 条）用 |
 | L2 卡片 / 输入卡 / 气泡 | `--dsg-blur-l2` | 14–18px（默认 16） | 文字密度中等 |
 | L3 菜单 / 下拉 / hovercard / 小浮层 | `--dsg-blur-l3` | 20–24px | 面积小、文字短；宿主菜单默认就是 `blur(40px)`，24 是"比宿主更克制" |
-| L3 dialog / 设置整窗 / 文档预览 | **单独一个 `--dsg-blur-l3-dialog`（或直接在规则里写 12px）** | 10–14px | 大面积 + 整窗文字；24px 在这里只烧 GPU 不加对比度 |
+| L3 dialog / 设置整窗 / 文档预览 | **`--dsg-backdrop-l3-dialog`**（=`--dsg-blur-l3-dialog`，**12px**，已登记进 §6.2/§6.4） | 10–14px | 大面积 + 整窗文字；24px 在这里只烧 GPU 不加对比度 |
 
 即：**"L1 6 / L2 16 / L3 24" 不是错，只是把 L3 的 24 用在了 menu 一类；只要 dialog 本体不吃 24px，就与本规格兼容。** 若实现不愿新增 `-dialog` 变量，就按"dialog 用 L2 的 16px"处理（16 在 10–14 的推荐区间上方，代价可接受）。
 

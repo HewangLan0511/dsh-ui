@@ -1,0 +1,440 @@
+/* ============================================================================
+   dsh-ui-deepseek · 60 settings / plugin pages / right sidebar / preview
+   ----------------------------------------------------------------------------
+   Tier map:
+     L3  settings window, fullscreen right panel, document preview paper
+     L2  settings cards, plugin list/detail cards, right-panel shell, tabs
+     L1  pane bodies, page canvases
+   Hard rules honoured here:
+     · settings window fill L3 + own frost ≤12px (never a 24px full-window blur)
+     · inner scrollers (settings options / right pane body) never get blur
+     · right panel needs the dockkit z-index lift once backdrop-filter is on
+     · text / code / pdf / office preview keep an opaque paper plate
+   ========================================================================== */
+
+/* ============================================================================
+   1. settings window — L3 face, capped frost
+   ========================================================================== */
+html[data-dsg='on'] [role='dialog'][aria-modal='true'][data-shortcut-modal='settings'],
+html[data-dsg='on'] [role='dialog'][aria-modal='true']:has([data-slot='settings.section']) {
+  background-color: var(--dsg-fill-l3);
+  background-image: var(--dsg-sheen-l3);
+  /* foundation's dialog channel: 12px, never a 24px full-window blur */
+  -webkit-backdrop-filter: var(--dsg-backdrop-dialog);
+  backdrop-filter: var(--dsg-backdrop-dialog);
+  border-radius: var(--dsg-radius-modal);
+  box-shadow: var(--dsg-bevel-l3);
+  /* blue primary CTAs + white ink on them, scoped to this window */
+  --dsw-alias-brand-primary: var(--dsg-blue);
+  --dsw-alias-button-primary-fill: var(--dsg-blue);
+  --dsw-alias-button-primary-hover: var(--dsg-blue-strong);
+  --dsw-alias-label-primary-foreground: #ffffff;
+}
+html[data-dsg='on'] body[data-dsg-fallback] [role='dialog'][aria-modal='true'][data-shortcut-modal='settings'],
+html[data-dsg='on'] body[data-dsg-fallback] [role='dialog'][aria-modal='true']:has([data-slot='settings.section']) {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+/* the scrim behind the settings window keeps the shared mask channel */
+html[data-dsg='on']
+  [role='presentation']:has(> [role='dialog'][data-shortcut-modal='settings'])
+  > [class*='_mask'] {
+  background-color: rgba(16, 24, 40, 0.28);
+  -webkit-backdrop-filter: var(--dsw-mask-blur);
+  backdrop-filter: var(--dsw-mask-blur);
+}
+html[data-dsg='on'] body[data-ds-dark-theme]
+  [role='presentation']:has(> [role='dialog'][data-shortcut-modal='settings'])
+  > [class*='_mask'] {
+  background-color: rgba(0, 0, 0, 0.46);
+}
+
+/* left navigation — pill rows with a blue active state */
+html[data-dsg='on'] [data-shortcut-modal='settings'] nav {
+  border-right: 0.5px solid var(--dsg-border-hair);
+  gap: 14px;
+}
+html[data-dsg='on'] [data-shortcut-modal='settings'] [class*='_navTitle'] {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--dsw-alias-label-primary);
+}
+html[data-dsg='on'] [data-shortcut-modal='settings'] [class*='_navCell'] {
+  height: 38px;
+  border-radius: 10px;
+  color: var(--dsw-alias-label-secondary);
+  transition:
+    background-color var(--dsg-motion-dur) var(--dsg-ease),
+    color var(--dsg-motion-dur) var(--dsg-ease);
+}
+html[data-dsg='on'] [data-shortcut-modal='settings'] [class*='_navCell']:hover {
+  background-color: rgba(77, 107, 254, 0.07);
+  color: var(--dsw-alias-label-primary);
+}
+html[data-dsg='on'] [data-shortcut-modal='settings'] [class*='_navCell'][aria-current='true'] {
+  background-color: rgba(77, 107, 254, 0.11);
+  color: var(--dsg-blue-strong);
+  font-weight: 500;
+  box-shadow: inset 0 0 0 0.5px rgba(77, 107, 254, 0.16);
+}
+html[data-dsg='on'] [data-shortcut-modal='settings'] [class*='_navLabel'] {
+  color: inherit;
+}
+
+/* content chrome */
+html[data-dsg='on'] [data-shortcut-modal='settings'] [class*='_header'] {
+  background-color: transparent;
+}
+html[data-dsg='on'] [data-shortcut-modal='settings'] [class*='_content'] {
+  min-width: 0;
+}
+html[data-dsg='on'] [data-shortcut-modal='settings'] [class*='_options'] {
+  padding: 0 28px 28px;
+  /* a scroller: never frost it (per-frame backdrop recompute) */
+}
+html[data-dsg='on'] [data-shortcut-modal='settings'] :is(h2, h3) {
+  letter-spacing: 0.005em;
+}
+
+/* ============================================================================
+   2. settings cards / rows / controls
+   ========================================================================== */
+/* card items only: direct children of a card list/grid (avoids _cardMainRow,
+   _cardContent, _cardTitle … being painted as cards) */
+html[data-dsg='on'] [data-shortcut-modal='settings'] [class*='_cards'] > *,
+html[data-dsg='on'] [data-shortcut-modal='settings'] [class*='_rowCard'] {
+  background-color: color-mix(in srgb, var(--dsg-blue) 2.5%, var(--dsg-fill-l2));
+  background-image: var(--dsg-sheen-l2);
+  border: 0.5px solid var(--dsg-border-hair);
+  border-radius: 16px;
+  box-shadow: var(--dsg-bevel-l1);
+  transition:
+    background-color var(--dsg-motion-dur) var(--dsg-ease),
+    box-shadow var(--dsg-motion-dur) var(--dsg-ease);
+}
+html[data-dsg='on'] [data-shortcut-modal='settings'] [class*='_cards'] > *:hover,
+html[data-dsg='on'] [data-shortcut-modal='settings'] [class*='_rowCard']:hover {
+  background-color: color-mix(in srgb, var(--dsg-blue) 4%, var(--dsg-fill-l2));
+  box-shadow: var(--dsg-bevel-l2);
+}
+html[data-dsg='on'] [data-shortcut-modal='settings'] [class*='_cards'] > *[data-open='true'] {
+  background-color: color-mix(in srgb, var(--dsg-blue) 4%, var(--dsg-fill-l2));
+  border-color: rgba(77, 107, 254, 0.2);
+}
+/* single cards that are not inside a card list (account / balance rows) */
+html[data-dsg='on'] [data-shortcut-modal='settings'] [class*='_balanceCard'] {
+  background-color: color-mix(in srgb, var(--dsg-blue) 2.5%, var(--dsg-fill-l2));
+  background-image: var(--dsg-sheen-l2);
+  border-radius: 16px;
+  box-shadow: var(--dsg-bevel-l1);
+}
+/* card head / tags */
+html[data-dsg='on'] [data-shortcut-modal='settings'] [class*='_cards'] [class*='_cardTitle'] {
+  font-weight: 600;
+  color: var(--dsw-alias-label-primary);
+}
+html[data-dsg='on'] [data-shortcut-modal='settings'] [class*='_cards'] [class*='_cardDesc'],
+html[data-dsg='on'] [data-shortcut-modal='settings'] [class*='_intro'] {
+  color: var(--dsw-alias-label-secondary);
+  line-height: 1.6;
+}
+/* setting rows: comfortable height, blue hover (form fields + inventory rows) */
+html[data-dsg='on'] [data-shortcut-modal='settings'] [class*='_field'] {
+  border-radius: 10px;
+  transition: background-color var(--dsg-motion-dur) var(--dsg-ease);
+}
+html[data-dsg='on'] [data-shortcut-modal='settings'] [class*='_field']:hover,
+html[data-dsg='on'] [data-shortcut-modal='settings'] [class*='_cardMainRow']:hover {
+  background-color: rgba(77, 107, 254, 0.045);
+}
+/* form fields stay opaque on the frosted face */
+html[data-dsg='on'] [data-shortcut-modal='settings']
+  :is(input, textarea, select):not([type='range']):not([type='checkbox']):not([type='radio']) {
+  background-color: var(--dsg-code-solid);
+  border: 0.5px solid var(--dsg-border-hair);
+  border-radius: 10px;
+  color: var(--dsw-alias-label-primary);
+}
+html[data-dsg='on'] [data-shortcut-modal='settings']
+  :is(input, textarea, select):not([type='range']):focus-visible {
+  border-color: rgba(77, 107, 254, 0.42);
+  box-shadow: 0 0 0 2px rgba(77, 107, 254, 0.16);
+  outline: none;
+}
+/* switches / sliders / checkboxes: DeepSeek blue accent */
+html[data-dsg='on'] [data-shortcut-modal='settings'] :is(input[type='checkbox'], input[type='radio'], input[type='range']) {
+  accent-color: var(--dsg-blue);
+}
+html[data-dsg='on'] [data-shortcut-modal='settings'] [class*='_switch'][aria-checked='true'] {
+  background: var(--dsg-blue);
+}
+html[data-dsg='on'] [data-shortcut-modal='settings'] [class*='_switch']:hover {
+  filter: brightness(1.05);
+}
+html[data-dsg='on'] [data-shortcut-modal='settings'] [class*='_segmented'],
+html[data-dsg='on'] [data-shortcut-modal='settings'] [class*='_control']:has(> [class*='_indicator']) {
+  background-color: color-mix(in srgb, var(--dsg-tint) 30%, transparent);
+  border: 0.5px solid var(--dsg-border-hair);
+  border-radius: 10px;
+}
+html[data-dsg='on'] [data-shortcut-modal='settings'] [class*='_control'] > [class*='_indicator'] {
+  border-radius: 8px;
+  background: var(--dsg-fill-l2);
+  box-shadow: var(--dsg-bevel-l1);
+}
+
+/* ============================================================================
+   3. plugin manager page (main panel) — L1 page, L2 cards
+   ========================================================================== */
+html[data-dsg='on'] [data-plugin-panel] {
+  --dsw-alias-brand-primary: var(--dsg-blue);
+  --dsw-alias-button-primary-fill: var(--dsg-blue);
+  --dsw-alias-button-primary-hover: var(--dsg-blue-strong);
+  --dsw-alias-label-primary-foreground: #ffffff;
+  color: var(--dsw-alias-label-primary);
+}
+html[data-dsg='on'] [data-plugin-panel] [class*='_pageTitle'] {
+  font-weight: 600;
+  letter-spacing: 0.005em;
+}
+html[data-dsg='on'] [data-plugin-panel] [class*='_pageIntro'] {
+  color: var(--dsw-alias-label-secondary);
+}
+html[data-dsg='on'] [data-plugin-group] {
+  border-radius: 18px;
+}
+html[data-dsg='on'] [data-plugin-group] [class*='_groupTitle'] {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dsw-alias-label-tertiary);
+}
+/* list rows / cards */
+html[data-dsg='on'] [data-plugin-item],
+html[data-dsg='on'] [data-plugin-package] {
+  background-color: var(--dsg-fill-l2);
+  background-image: var(--dsg-sheen-l2);
+  border: 0.5px solid var(--dsg-border-hair);
+  border-radius: 16px;
+  box-shadow: var(--dsg-bevel-l1);
+  transition:
+    background-color var(--dsg-motion-dur) var(--dsg-ease),
+    box-shadow var(--dsg-motion-dur) var(--dsg-ease);
+}
+html[data-dsg='on'] [data-plugin-item]:hover,
+html[data-dsg='on'] [data-plugin-package]:hover {
+  background-color: color-mix(in srgb, var(--dsg-blue) 4%, var(--dsg-fill-l2));
+  box-shadow: var(--dsg-bevel-l2);
+}
+html[data-dsg='on'] [data-plugin-item] [class*='_cardIcon'],
+html[data-dsg='on'] [data-plugin-package] [class*='_cardIcon'] {
+  background: color-mix(in srgb, var(--dsg-blue) 6%, rgba(255, 255, 255, 0.6));
+  border-color: rgba(77, 107, 254, 0.14);
+}
+html[data-dsg='on'] [data-plugin-item] [class*='_cardTitle'],
+html[data-dsg='on'] [data-plugin-package] [class*='_cardTitle'] {
+  font-weight: 600;
+}
+html[data-dsg='on'] [data-plugin-item] [class*='_cardDesc'],
+html[data-dsg='on'] [data-plugin-package] [class*='_cardDesc'] {
+  color: var(--dsw-alias-label-secondary);
+}
+/* status tags / badges */
+html[data-dsg='on'] [data-plugin-status] [class*='_statusTag'],
+html[data-dsg='on'] [data-plugin-panel] [class*='_statusTag'],
+html[data-dsg='on'] [data-plugin-panel] [class*='_badge'] {
+  border-radius: 999px;
+  background-color: rgba(77, 107, 254, 0.1);
+  color: var(--dsg-blue-strong);
+  border: 0.5px solid rgba(77, 107, 254, 0.16);
+  font-weight: 500;
+}
+
+/* detail page (same surface, just a view) */
+html[data-dsg='on'] [data-plugin-detail] {
+  color: var(--dsw-alias-label-primary);
+}
+html[data-dsg='on'] [data-plugin-detail] [class*='_crumb'] {
+  border-radius: 10px;
+  color: var(--dsw-alias-label-secondary);
+}
+html[data-dsg='on'] [data-plugin-detail] [class*='_crumb']:hover {
+  background-color: rgba(77, 107, 254, 0.07);
+  color: var(--dsg-blue-strong);
+}
+html[data-dsg='on'] [data-plugin-rows] {
+  background-color: color-mix(in srgb, var(--dsg-tint) 18%, transparent);
+  border: 0.5px solid var(--dsg-border-hair);
+  border-radius: 16px;
+  padding: 4px;
+}
+html[data-dsg='on'] [data-plugin-row] {
+  border-radius: 12px;
+  min-height: 44px;
+  transition: background-color var(--dsg-motion-dur) var(--dsg-ease);
+}
+html[data-dsg='on'] [data-plugin-row]:hover {
+  background-color: rgba(77, 107, 254, 0.05);
+}
+html[data-dsg='on'] [data-plugin-row][data-state='failed'] {
+  box-shadow: inset 2px 0 0 rgba(239, 68, 68, 0.6);
+}
+html[data-dsg='on'] [data-plugin-detail] [class*='_detailSection'] {
+  background-color: var(--dsg-fill-l2);
+  border: 0.5px solid var(--dsg-border-hair);
+  border-radius: 16px;
+  padding: 12px 14px;
+}
+/* plugin market */
+html[data-dsg='on'] [data-market-entry] {
+  background-color: var(--dsg-fill-l2);
+  background-image: var(--dsg-sheen-l2);
+  border: 0.5px solid var(--dsg-border-hair);
+  border-radius: 16px;
+  box-shadow: var(--dsg-bevel-l1);
+  transition:
+    background-color var(--dsg-motion-dur) var(--dsg-ease),
+    box-shadow var(--dsg-motion-dur) var(--dsg-ease);
+}
+html[data-dsg='on'] [data-market-entry]:hover {
+  background-color: color-mix(in srgb, var(--dsg-blue) 4%, var(--dsg-fill-l2));
+  box-shadow: var(--dsg-bevel-l2);
+}
+html[data-dsg='on'] [data-market-detail] {
+  --dsw-alias-brand-primary: var(--dsg-blue);
+  --dsw-alias-button-primary-fill: var(--dsg-blue);
+  --dsw-alias-button-primary-hover: var(--dsg-blue-strong);
+  --dsw-alias-label-primary-foreground: #ffffff;
+}
+html[data-dsg='on'] [data-market-detail] [class*='_detailSection'] {
+  background-color: var(--dsg-fill-l2);
+  border: 0.5px solid var(--dsg-border-hair);
+  border-radius: 16px;
+  padding: 12px 14px;
+}
+/* install dialog keeps the generic dialog face but gets the blue CTA */
+html[data-dsg='on'] [role='dialog'][aria-modal='true']:has([data-install-phase]),
+html[data-dsg='on'] [role='dialog'][aria-modal='true'] [class*='_installDialog'] {
+  --dsw-alias-brand-primary: var(--dsg-blue);
+  --dsw-alias-button-primary-fill: var(--dsg-blue);
+  --dsw-alias-button-primary-hover: var(--dsg-blue-strong);
+  --dsw-alias-label-primary-foreground: #ffffff;
+}
+
+/* ============================================================================
+   4. right sidebar (dockkit) — L2 shell, L1 pane bodies, L3 fullscreen
+   ========================================================================== */
+html[data-dsg='on'] [data-rightbar-col] [data-sidebar-right-panel]:not([aria-hidden='true']),
+html[data-dsg='on'] [data-sidebar-right-panel][data-sidebar-right-open] {
+  background-color: var(--dsg-fill-l2);
+  background-image: var(--dsg-sheen-l2);
+  -webkit-backdrop-filter: var(--dsg-backdrop-l2);
+  backdrop-filter: var(--dsg-backdrop-l2);
+  border-left: 0.5px solid var(--dsg-border-hair);
+  border-radius: 18px 0 0 18px;
+  box-shadow: -14px 0 44px rgba(44, 74, 140, 0.1);
+  /* backdrop-filter forms a stacking context: keep the dock above the shell */
+  z-index: var(--dsh-dockkit-dock-layer, 10);
+}
+/* closed state must be explicitly clean (container stays mounted) */
+html[data-dsg='on'] [data-rightbar-col] [data-sidebar-right-panel][aria-hidden='true'] {
+  background: none;
+  background-image: none;
+  border-left: none;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+/* fullscreen right panel = detail surface → L3 */
+html[data-dsg='on'] [data-sidebar-right-panel][data-sidebar-right-mode='fullscreen'] {
+  background-color: var(--dsg-fill-l3);
+  -webkit-backdrop-filter: var(--dsg-backdrop-l3);
+  backdrop-filter: var(--dsg-backdrop-l3);
+}
+/* dockkit surfaces / panes are transparent so the shell fill reads through */
+html[data-dsg='on'] [data-sidebar-right-panel] :is([data-dockkit-surface], [data-dockkit-pane], [data-dockkit-host]) {
+  background-color: transparent;
+}
+html[data-dsg='on'] [data-sidebar-right-panel] [data-dockkit-pane] {
+  border-radius: 14px;
+  overflow: hidden;
+}
+/* tab strip: capsule tabs */
+html[data-dsg='on'] [data-sidebar-right-panel] [data-dockkit-strip] {
+  background-color: transparent;
+  padding-bottom: 4px;
+}
+html[data-dsg='on'] [data-sidebar-right-panel] [data-dockkit-tab] {
+  border-radius: 9px;
+  color: var(--dsw-alias-label-secondary);
+  transition:
+    background-color var(--dsg-motion-dur) var(--dsg-ease),
+    color var(--dsg-motion-dur) var(--dsg-ease);
+}
+html[data-dsg='on'] [data-sidebar-right-panel] [data-dockkit-tab]:hover {
+  background-color: rgba(77, 107, 254, 0.07);
+  color: var(--dsw-alias-label-primary);
+}
+html[data-dsg='on'] [data-sidebar-right-panel] [data-dockkit-tab][data-dockkit-tab-active],
+html[data-dsg='on'] [data-sidebar-right-panel] [data-dockkit-tab][aria-selected='true'] {
+  background-color: rgba(77, 107, 254, 0.1);
+  color: var(--dsg-blue-strong);
+  font-weight: 500;
+}
+html[data-dsg='on'] [data-sidebar-right-panel] [data-dockkit-divider] {
+  background: var(--dsg-border-hair);
+}
+/* right-panel guide entries */
+html[data-dsg='on'] [data-sidebar-right-panel] [data-sidebar-right-guide-entry],
+html[data-dsg='on'] [data-sidebar-right-panel] :is(button, a)[class*='_entry'] {
+  background-color: var(--dsg-fill-l2);
+  background-image: var(--dsg-sheen-l2);
+  border: 0.5px solid var(--dsg-border-hair);
+  border-radius: 16px;
+  box-shadow: var(--dsg-bevel-l1);
+}
+html[data-dsg='on'] [data-sidebar-right-panel] :is(button, a)[class*='_entry']:hover {
+  background-color: color-mix(in srgb, var(--dsg-blue) 4%, var(--dsg-fill-l2));
+}
+
+/* ============================================================================
+   5. document preview — paper plate (readable, never see-through)
+   ========================================================================== */
+html[data-dsg='on'] [data-document-preview],
+html[data-dsg='on'] [data-textpreview-wrap],
+html[data-dsg='on'] [data-code-preview],
+html[data-dsg='on'] [data-pdf-preview],
+html[data-dsg='on'] [data-html-preview],
+html[data-dsg='on'] [data-document-markdown],
+html[data-dsg='on'] [data-plan-preview] [class*='_document'] {
+  background-color: var(--dsg-code-banner);
+  border: 0.5px solid var(--dsg-border-hair);
+  border-radius: 14px;
+  box-shadow: var(--dsg-bevel-l1);
+  color: var(--dsw-alias-label-primary);
+}
+html[data-dsg='on'] [data-document-preview] [class*='_header'],
+html[data-dsg='on'] [data-textpreview-wrap] [class*='_header'] {
+  background-color: color-mix(in srgb, var(--dsg-tint) 62%, transparent);
+  border-bottom: 0.5px solid var(--dsg-border-hair);
+  border-radius: 14px 14px 0 0;
+}
+html[data-dsg='on'] [data-document-preview] [class*='_page'],
+html[data-dsg='on'] [data-document-preview] [class*='_body'],
+html[data-dsg='on'] [data-textpreview-wrap] [class*='_body'] {
+  background-color: transparent;
+}
+html[data-dsg='on'] [data-document-preview] [class*='_frontmatter'] {
+  background-color: var(--dsg-fill-l1);
+  border: 0.5px solid var(--dsg-border-hair);
+  border-radius: 10px;
+}
+/* plan preview inside the right panel */
+html[data-dsg='on'] [data-plan-preview] {
+  background-color: var(--dsg-fill-l3);
+  background-image: var(--dsg-sheen-l3);
+  border-radius: var(--dsg-radius-modal);
+  box-shadow: var(--dsg-bevel-l2);
+}

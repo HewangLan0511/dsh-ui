@@ -130,7 +130,7 @@ Pillow 逐像素扫描：① 墨迹包围盒（阈值 luminance < 100/150 分离
 | 维度 | 现状 | 目标 |
 |---|---|---|
 | 画布 | 纯 `#151517` 平面，无氛围层 | 浅色雾蓝氛围层 + 75px 网格 + 3 处雾核（§6） |
-| 层级 | 靠 1px 边线 + 亮度差（`#1b1b1c`/`#212123`） | 靠 effAlpha（29.3/39.8/84.6）+ blur（20/16/10） |
+| 层级 | 靠 1px 边线 + 亮度差（`#1b1b1c`/`#212123`） | 靠 effAlpha（29.3/39.8/84.6）+ blur（区间见 §7.2） |
 | 圆角 | 8/12/16 为主 | 10/16/20/24，composer 24，窗口 24，胶囊 999 |
 | 顶栏 | 系统菜单 / 标题 / 操作三段，无玻璃 | 52px 一体顶栏，L2 玻璃，只留 logo + 标题 + 3 个动作 |
 | Hero | 无（直接对话） | 空态 Hero：48（clamp 40–60）+ 20 lede + composer + 3 胶囊 |
@@ -576,17 +576,17 @@ fill     = color-mix(in srgb, tint floor%, rgba(tint-rgb, alpha) (1−floor)%)
 
 > L1 大面**不挂霜**，仅页面级小面（header / sticky 条）6–8px；L2 14–18px；L3 菜单/下拉/hovercard 20–24px；L3 dialog / 设置窗 / 文档预览 **10–14px**。
 
-即 live 实现的「L1 6 / L2 16 / L3 24」**不是错**，前提是 **24px 只用在菜单一类小浮层**；dialog 本体不许吃 24px —— 要么新增 `--dsg-blur-l3-dialog: 12px`，要么 dialog 直接用 L2 的 16px（16 在推荐区间上方，代价可接受）。理由：大面积 + 整窗文字时 24px 只烧 GPU、不加对比度。
+即 live 实现的「L1 6 / L2 16 / L3 24」**不是错**，前提是 **24px 只用在菜单一类小浮层**。两个 fallback 都已是 canonical token（GLASS-SPEC §6.2/§6.4）：菜单吃 `--dsg-backdrop-l3`，**dialog / 设置窗 / 文档预览吃 `--dsg-backdrop-l3-dialog`（=`--dsg-blur-l3-dialog: 12px`）** —— dialog 本体不许吃 24px。理由：大面积 + 整窗文字时 24px 只烧 GPU、不加对比度。
 
 ### 7.3 预设 A：参考图档（**DSH 默认，铺自有氛围层时**）
 
 参考图 composer 实测 effAlpha 只有 **0.34–0.40**，壁纸档 L2 的 0.67 会把它画成奶白实心。DSH 的背景是**有界的 CSS 氛围层**（最暗锚点 `#99afdb`），所以按 GLASS-SPEC §4.4b 把 L1/L2 的 floor 按 `fidelity = 0.55` 缩放；**L3 不参与 A，保持 B 的满地板**（浮层背后可能是任意内容，二级/三级文字、hover 提亮、深色菜单压亮图都只剩临界对比度）。
 
-| 级 | alpha 浅/深 | floor（浅/深） | **effAlpha 浅/深** | blur | 字面量 fill（可直接粘贴） |
+| 级 | alpha 浅/深 | floor（浅/深） | **effAlpha 浅/深** | blur（同 §7.2 区间） | 字面量 fill（可直接粘贴） |
 |---|---|---|---|---|---|
-| L1 | 0.06 / **0.10** | .2475 / .3245 | **29.3% / 39.2%** | 20px | `rgba(255,255,255,.293)` / `rgba(13,21,36,.392)` |
-| L2 | 0.20 / **0.26** | .2475 / .3245 | **39.8% / 50.0%** | 16px | `rgba(255,255,255,.398)` / `rgba(13,21,36,.500)` |
-| L3 | 0.72 / 0.72 | .45 / .59（**不缩放**） | **84.6% / 88.5%** | 10px | `rgba(255,255,255,.846)` / `rgba(13,21,36,.885)` |
+| L1 | 0.06 / **0.10** | .2475 / .3245 | **29.3% / 39.2%** | 大面不挂霜，页面级小面 6–8px | `rgba(255,255,255,.293)` / `rgba(13,21,36,.392)` |
+| L2 | 0.20 / **0.26** | .2475 / .3245 | **39.8% / 50.0%** | 14–18px（16） | `rgba(255,255,255,.398)` / `rgba(13,21,36,.500)` |
+| L3 | 0.72 / 0.72 | .45 / .59（**不缩放**） | **84.6% / 88.5%** | 菜单 20–24px；dialog/设置 10–14px | `rgba(255,255,255,.846)` / `rgba(13,21,36,.885)` |
 
 **安全性证明（不是感觉）**：浅色最坏情况 = 0.398 白压在 `#99afdb` 上 → 面板呈 `#c2cfe9`，正文 `#101728` 对比度 **11.4 : 1**；即使沿用 B 档的 `#1c2532` 也有 9.8 : 1 ≫ 4.5 : 1。参考图档守住红线，只是把余量从「照片级」降到「氛围层级」；L3 根本没有降。
 
@@ -1022,7 +1022,7 @@ body[data-ds-dark-theme] .dsg-code { background: rgba(13,21,36,.82); }
 |---|---|
 | 尺寸 | 960×640（min 720×520，max 90vw×85vh） |
 | 圆角 | 24 |
-| 玻璃 | **L3**：`--dsg-fill-l3` + `--dsg-backdrop-l3` + `--dsg-bevel-l3`（A 档下 L3 仍是 B，eff 84.6%） |
+| 玻璃 | **L3**：`--dsg-fill-l3` + `--dsg-bevel-l3`（A 档下 L3 仍是 B，eff 84.6%）。**模糊用 canonical 的 `--dsg-backdrop-l3-dialog`（12px），不要直接吃菜单的 `--dsg-backdrop-l3`（24px）** —— §7.2 区间：dialog/设置 10–14px |
 | scrim | `--dsw-mask-blur: var(--dsg-mask-filter)`；遮罩色 `rgba(10,16,28,.32)`（深 `rgba(0,0,0,.48)`） |
 | 结构 | 左导航 200（padding 16、分组标题 11/16、项 34 高 r8）+ 右侧内容（padding 24 28） |
 | 分区 | 标题 20/28 600 + 说明 12/18 `--dsg-label-3` + 卡片组 |
@@ -1039,8 +1039,12 @@ body[data-ds-dark-theme] .dsg-code { background: rgba(13,21,36,.82); }
   border-radius: var(--dsg-radius-window); overflow: hidden;
   display: grid; grid-template-columns: 200px minmax(0, 1fr);
   background: var(--dsg-fill-l3);
-  -webkit-backdrop-filter: var(--dsg-backdrop-l3);
-          backdrop-filter: var(--dsg-backdrop-l3);
+  /* dialog 专用雾档（canonical: GLASS-SPEC §6.2 --dsg-blur-l3-dialog = 12px；
+     不要复用菜单的 24px，整窗大面积只烧 GPU）。fallback 只是安全网 */
+  -webkit-backdrop-filter: var(--dsg-backdrop-l3-dialog,
+    blur(12px) saturate(var(--dsg-sat)) brightness(var(--dsg-bright)) contrast(var(--dsg-contrast)));
+          backdrop-filter: var(--dsg-backdrop-l3-dialog,
+    blur(12px) saturate(var(--dsg-sat)) brightness(var(--dsg-bright)) contrast(var(--dsg-contrast)));
   box-shadow: var(--dsg-bevel-l3);
   animation: dsg-dialog-in 220ms var(--dsg-ease-out) both;
 }
@@ -1300,13 +1304,15 @@ body {
 
 `--dsg-tint-light/-dark`、`--dsg-tint-rgb-light/-dark`、`--dsg-tint`、`--dsg-tint-rgb`、
 `--dsg-fidelity`、`--dsg-floor-base-light/-dark`、`--dsg-floor`、
-`--dsg-alpha-l1/l2/l3`（实现里简写为 `--dsg-a1/a2/a3`，同一变量的短名）、`--dsg-blur-l1/l2/l3`、
+`--dsg-a1/a2/a3`（**canonical**；`--dsg-alpha-l1/l2/l3` 是 GLASS-SPEC §6.2 的别名，两者等价）、
+`--dsg-blur-l1/l2/l3`、`--dsg-blur-l3-dialog`（= `12px`；dialog / 设置窗 / 文档预览**专属**，区间 10–14）、
+`--dsg-backdrop-l3-dialog`（dialog 专用 backdrop 值；菜单继续用 `--dsg-backdrop-l3`）、
 `--dsg-sat`、`--dsg-bright`、`--dsg-contrast`、
 `--dsg-fill-l1/l2/l3`、`--dsg-backdrop-l1/l2/l3`、`--dsg-sheen-l1/l2/l3`、`--dsg-bevel-l1/l2/l3`、
 `--dsg-border-hair`、`--dsg-mask-filter`、`--dsg-menu-fill`、`--dsg-menu-filter`、
 `--dsg-scroll-thumb`、`--dsg-scroll-thumb-hover`、`body[data-dsg-fallback]`。
 
-DSG 侧**不新增玻璃变量**。「L3 不参与 A 档」只用一行实现：`--dsg-fill-l3` 的地板槽读 `--dsg-floor-base-*`（满值），而 L1/L2 读 `--dsg-floor`（随 fidelity 缩放）：
+**不变量**：`--dsg-floor` 只服务 L1/L2；L3 的 fill 直接读 `--dsg-floor-base-*`，因此 **L3 没有任何可被 fidelity 影响的输入**（GLASS-SPEC §2.4/§6.1 已把这句写成不变量）。DSG 侧**不新增玻璃变量**：
 
 ```css
 /* ✅ 正确：L3 地板恒定 */
@@ -1489,7 +1495,7 @@ body[data-ds-dark-theme] {
 | 8 | composer 几何 | 量 bbox | 760±2 / 高 ≥120 / r24±1 / 发送钮 32±1 |
 | 9 | composer 填充 | 面板中部与外部背景各取 1 点反解 alpha | effAlpha 0.38–0.42（A） |
 | 10 | 三级 effAlpha | DevTools 读三层 `background-color` alpha | 浅 .293/.398/.846、深 .392/.500/.885，±0.02 |
-| 11 | blur 分级与常量 | 读三层 `backdrop-filter` | 20 / 16 / 10 px；`saturate 1.30` 三层一致（不许爬梯） |
+| 11 | blur 分级与常量 | 读三层 `backdrop-filter` + 读 dialog 体 | 落在 §7.2 允许区间：L2 14–18；菜单 20–24；**dialog/设置用 `--dsg-backdrop-l3-dialog`（12px）**；`saturate 1.30` 三层一致（不许爬梯） |
 | 12 | L3 不降级 | 切到 A 档后读弹窗/菜单 | L3 仍是 84.6%/88.5%；菜单走 `--dsg-menu-*`（.86 / blur 24） |
 | 13 | 正文对比度 | L1/L2/L3 上正文 vs 最暗氛围锚点 | ≥ 4.5:1（目标：L2 16.1:1，最坏 11.4:1） |
 | 14 | 顶光不刺眼 | 截图看面板上沿 | 顶光条亮度 ≤ 面板 +20/255；alpha ≤ .32（浅）/.14（深） |
@@ -1509,7 +1515,7 @@ body[data-ds-dark-theme] {
 | DPR 假设 | **推定 1.5** | 三个锚点交叉验证（32px 按钮 / 14-20 行高 / 16px placeholder）；若实际为 2.0，绝对 px 需按比例缩放，比例关系不变。 |
 | Hero 衬线 vs 黑体 | **已给结论** | 参考图实测为黑体（§2.7 有 4× 证据）；项目要求东方气质 → 默认衬线 + 一行切回。需产品拍板。 |
 | 玻璃数值 | **已对齐（以 GLASS-SPEC 为准）** | 契约与三级表引用 `docs/GLASS-SPEC.md` §2/§4.4/§4.4b/§6.2/§6.4；A 档由 glass-analyst 拥有，本文件 §7.3 照其 §4.4b 落地。DSG 侧不新增玻璃变量，「L3 不参与 A」靠 `--dsg-fill-l3` 读 `--dsg-floor-base-*` 实现。 |
-| 当前实现与本文的偏差 | **待实现侧修正（截至写作时）** | `plugin/src/styles/00-foundation.css`：① `--dsg-blur-l1: 6px` / `--dsg-blur-l3: 24px`（契约 20 / 16 / 10 渐细）；② `--dsg-fill-l3` 的地板读 `--dsg-floor`，A 档下 L3 会从 84.6% 掉到 ≈79%（§7.3 / §9.4-A 要求读 `--dsg-floor-base-*`）。这两处不改，§12 第 11/12 条过不了。 |
+| 当前实现与本文的偏差 | **1 项待修（P0）** | `plugin/src/styles/00-foundation.css`：①（已合规）`--dsg-blur-l1: 6px` / `--dsg-blur-l3: 24px` 落在 §7.2 允许区间内，**前提是 24px 只给菜单一类小浮层，dialog/设置窗必须用 10–14px（或 L2 的 16px）**；②（**P0**）`--dsg-fill-l3` 的地板读 `--dsg-floor`，A 档下 L3 会从 84.6% 掉到 ≈79%，必须改为读 `--dsg-floor-base-light|dark`（§7.3 / §9.4-A / GLASS-SPEC §6.4b）。 |
 | composer 从 .62 降到 .398 | **可见变化，待产品确认** | 现状实测 .62 位于 A(.398) 与 B(.67) 之间；采用 A 后 composer 明显更透。若产品要求保持当前观感，用 B 或给 composer 单独 `--dsg-alpha-bubble/composer`。 |
 | 组件几何（设置窗口、右栏、菜单） | **设计目标值，非实测** | 参考图只有首屏，没有这些界面；尺寸取自 DSH 现状截图与桌面 GUI 惯例，实现时允许 ±4px。 |
 | A 档 guard #1（in-flow 合法性） | **引用 GLASS-SPEC 的 DOM 核对** | composer 背后不滚内容的判断来自 `[data-composer-seat]` 与 `[data-conversation-region="chat"]` 的兄弟关系（GLASS-SPEC §4.4b）；若后续改成悬浮层必须回 B。我未独立复核快照行号。 |
@@ -1559,6 +1565,9 @@ body {
           backdrop-filter: var(--dsg-backdrop-l1); box-shadow: var(--dsg-bevel-l1); }
 .dsg-l2 { background: var(--dsg-fill-l2); -webkit-backdrop-filter: var(--dsg-backdrop-l2);
           backdrop-filter: var(--dsg-backdrop-l2); box-shadow: var(--dsg-bevel-l2); }
+/* 菜单 / 下拉 / hovercard 用 l3（--dsg-backdrop-l3）；
+   dialog / 设置窗 / 文档预览改用 --dsg-backdrop-l3-dialog（canonical，12px），
+   别吃菜单的 24px（§7.2 区间 / GLASS-SPEC §6.2） */
 .dsg-l3 { background: var(--dsg-fill-l3); -webkit-backdrop-filter: var(--dsg-backdrop-l3);
           backdrop-filter: var(--dsg-backdrop-l3); box-shadow: var(--dsg-bevel-l3); }
 /* 4) 无 backdrop-filter 降级（由 JS 写属性，见 GLASS-SPEC §5.4） */

@@ -1,0 +1,295 @@
+/* ============================================================================
+   dsh-ui-deepseek · 10 shell — 主壳 / 三栏 / Windows 标题栏 / 会话 header / 右栏外壳
+   Owner: shell-dev.  Consumes the glass engine in 00-foundation.css only.
+
+   规则来源：docs/UI-CONTRACT.md §3/§4、docs/GLASS-SPEC.md §1/§5、
+   docs/DESIGN-SPEC.md §8.1/§8.2/§8.4、docs/SURFACE-MAP.md §2/§4/§6/§8。
+
+   硬约束（本文件逐步遵守）：
+   · Windows 标题栏是 frame 的 ::before（宿主壳层），模糊另起 ::after —— 伪元素没有
+     后代，永不成为 fixed 包含块（左栏 fixed 收起按钮安全）。
+   · 会话 header 的霜只能挂 ::before；header 设 z-index:0 建普通层叠上下文（不是
+     isolation —— isolation 会建 backdrop root，霜会失效）。
+   · 右栏面板必须带 open 守卫（收起态 aria-hidden=true 仍挂载在布局里）。
+   · 不在 frame / centerCol / rightbarCol 这些 fixed 祖先上挂 backdrop-filter。
+   ========================================================================== */
+
+/* ---- shared shell vars (my own layer, foundation keeps the engine) -------- */
+html[data-dsg='on'] {
+  --dsg-capsule: rgba(255, 255, 255, 0.55);
+  --dsg-capsule-hover: rgba(255, 255, 255, 0.74);
+  --dsg-row-hover: rgba(31, 58, 110, 0.055);
+  --dsg-row-active: rgba(77, 107, 254, 0.12);
+  --dsg-row-active-ink: #2f49d9;
+  --dsg-hairline-soft: rgba(56, 88, 158, 0.1);
+  --dsg-sheen-top: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  --dsg-header-h: 57px;
+  --dsg-shell-radius: 20px;
+}
+html[data-dsg='on'] body[data-ds-dark-theme] {
+  --dsg-capsule: rgba(255, 255, 255, 0.08);
+  --dsg-capsule-hover: rgba(255, 255, 255, 0.13);
+  --dsg-row-hover: rgba(255, 255, 255, 0.06);
+  --dsg-row-active: rgba(123, 147, 255, 0.18);
+  --dsg-row-active-ink: #9fb4ff;
+  --dsg-hairline-soft: rgba(150, 180, 255, 0.12);
+  --dsg-sheen-top: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+/* ============================================================
+   1. 页面底 / 主壳
+   ============================================================ */
+/* 整窗彻底透明：氛围层是唯一背衬。结构锚点：root slot 的直接子 div = frame；
+   不写整串哈希类名（[class*="_frame"] 太宽，只作为结构选择器的组合项）。 */
+html[data-dsg='on'] [data-slot='root'] > [class*='_frame'] {
+  background: transparent !important;
+}
+html[data-dsg='on'] [data-slot='main'] {
+  background: transparent !important;
+}
+/* 底部槽 / 浮层挂载点：不铺底 */
+html[data-dsg='on'] [data-shell-bottom] {
+  background: transparent !important;
+}
+html[data-dsg='on'] [data-shell-overlay] {
+  background: transparent;
+}
+/* 中列：不铺整块地板（大滚动容器禁止挂霜）。只留一道很淡的顶部白釉渐隐，
+   让氛围层是画布本身、玻璃面浮在雾上 —— 这是「空气感」的来源。
+   顶部圆角保留给 header 的 L2 玻璃（它与中列圆角对齐）。 */
+html[data-dsg='on'] div:has(> [data-slot='main']) {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.2) 0,
+    rgba(255, 255, 255, 0.05) 180px,
+    rgba(255, 255, 255, 0) 420px
+  );
+  border-radius: var(--dsg-shell-radius) var(--dsg-shell-radius) 0 0;
+  box-shadow: inset -0.5px 0 0 var(--dsg-hairline-soft);
+}
+html[data-dsg='on'] body[data-ds-dark-theme] div:has(> [data-slot='main']) {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.05) 0,
+    rgba(255, 255, 255, 0.015) 180px,
+    rgba(255, 255, 255, 0) 420px
+  );
+}
+/* 右栏 track 本身透明；面板在下面单独画 */
+html[data-dsg='on'] [data-rightbar-col] {
+  background: transparent !important;
+}
+
+/* ============================================================
+   2. Windows 原生窗口标题栏（frame 的 ::before 是它唯一底色）
+   ============================================================ */
+/* 底色 + 恒定白釉（不能用三段渐变：40px 与 1111px 的盒子会算出不同釉光） */
+html[data-dsg='on'][data-windows-titlebar] [data-slot='root'] > [class*='_frame']::before {
+  background-color: var(--dsg-fill-l1) !important;
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1)) !important;
+  border-bottom: 0.5px solid var(--dsg-border-hair);
+}
+html[data-dsg='on'][data-windows-titlebar] body[data-ds-dark-theme] [data-slot='root'] > [class*='_frame']::before {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.04)) !important;
+}
+html[data-dsg='on'][data-windows-titlebar] [data-slot='root'] > [class*='_frame']::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: var(--dsh-windows-titlebar-height, 40px);
+  pointer-events: none;
+  -webkit-backdrop-filter: var(--dsg-backdrop-l1);
+  backdrop-filter: var(--dsg-backdrop-l1);
+}
+
+/* ============================================================
+   3. 会话 header：L2 玻璃 + DeepSeek tab 语言（高度压到 ~52–57px）
+   ============================================================ */
+html[data-dsg='on'] [data-slot='conversation.header'] > header {
+  position: relative;
+  z-index: 0; /* 普通层叠上下文，让 ::before 的负 z-index 有落脚点 */
+  padding: 3px 26px 0 !important;
+  min-height: var(--dsg-header-h);
+  border-bottom: 1px solid var(--dsg-border-hair) !important;
+  background: transparent !important;
+  transition: box-shadow var(--dsg-motion-dur) var(--dsg-ease);
+}
+html[data-dsg='on'] body[data-ds-dark-theme] [data-slot='conversation.header'] > header {
+  border-bottom-color: rgba(150, 180, 255, 0.16) !important;
+}
+html[data-dsg='on'] [data-slot='conversation.header'] > header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: var(--dsg-shell-radius) var(--dsg-shell-radius) 0 0;
+  background-color: var(--dsg-fill-l2);
+  background-image: var(--dsg-sheen-l2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  -webkit-backdrop-filter: var(--dsg-backdrop-l2);
+  backdrop-filter: var(--dsg-backdrop-l2);
+}
+html[data-dsg='on'] body[data-ds-dark-theme] [data-slot='conversation.header'] > header::before {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+/* 标题行更紧凑：52–57px 的 DeepSeek 观感，而不是 76px 的宿主默认 */
+html[data-dsg='on'] [data-slot='conversation.header'] > header [class*='_titleRow'] {
+  min-height: 24px;
+  align-items: center;
+}
+/* header 里的动作簇统一压到 26px，避免把标题行撑高 */
+html[data-dsg='on'] [data-slot='conversation.header'] > header :is(
+    [data-slot='conversation.session.header.actions'],
+    [data-slot='conversation.session.header.utilities'],
+    [data-slot='conversation.session.header.corner']
+  ) button {
+  height: 26px;
+  min-height: 26px;
+  font-size: 12.5px;
+}
+html[data-dsg='on'] [data-slot='conversation.header'] > header [class*='_crumb'] {
+  color: var(--dsw-alias-label-tertiary);
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 20px;
+  padding: 2px 8px;
+  transition: background-color 140ms var(--dsg-ease), color 140ms var(--dsg-ease);
+}
+html[data-dsg='on'] [data-slot='conversation.header'] > header button[class*='_crumb']:hover {
+  background: var(--dsg-row-hover);
+  color: var(--dsw-alias-label-primary);
+}
+html[data-dsg='on'] [data-slot='conversation.header'] > header [class*='_crumbCurrent'] {
+  color: var(--dsw-alias-label-primary);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  padding-left: 4px;
+}
+/* 顶部动作区：一律胶囊化，hover 玻璃反馈 */
+html[data-dsg='on'] [data-slot='conversation.header'] > header :is(
+    [data-slot='conversation.session.header.actions'],
+    [data-slot='conversation.session.header.utilities'],
+    [data-slot='conversation.session.header.corner']
+  ) button {
+  border-radius: 999px;
+  transition: background-color 140ms var(--dsg-ease), color 140ms var(--dsg-ease);
+}
+html[data-dsg='on'] [data-slot='conversation.header'] > header :is(
+    [data-slot='conversation.session.header.actions'],
+    [data-slot='conversation.session.header.utilities'],
+    [data-slot='conversation.session.header.corner']
+  ) button:hover {
+  background: var(--dsg-row-hover);
+}
+/* header 里的「打开方式」拆分按钮：整组做成胶囊 */
+html[data-dsg='on'] [data-slot='conversation.header'] > header [data-slot='conversation.session.header.utilities'] [class*='_split'] {
+  border-radius: 999px;
+  border: 0.5px solid var(--dsg-hairline-soft);
+  background: var(--dsg-capsule);
+  overflow: hidden;
+  transition: background-color 140ms var(--dsg-ease), border-color 140ms var(--dsg-ease);
+}
+html[data-dsg='on'] [data-slot='conversation.header'] > header [data-slot='conversation.session.header.utilities'] [class*='_split']:hover {
+  background: var(--dsg-capsule-hover);
+  border-color: rgba(77, 107, 254, 0.2);
+}
+/* tabs：DeepSeek 风格——未选中弱化、选中蓝字 + 圆角下划线 */
+html[data-dsg='on'] [data-conversation-tabs] {
+  gap: 28px;
+  margin-top: 0;
+  padding-left: 6px;
+}
+html[data-dsg='on'] [data-conversation-tabs] [role='tab'] {
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 16px;
+  padding: 2px 1px 7px;
+  border-radius: 8px 8px 0 0;
+  transition: color 140ms var(--dsg-ease), background-color 140ms var(--dsg-ease);
+}
+html[data-dsg='on'] [data-conversation-tabs] [role='tab']::after {
+  height: 2.5px;
+  border-radius: 999px;
+  background: transparent;
+  transition: background-color 160ms var(--dsg-ease), box-shadow 160ms var(--dsg-ease);
+}
+html[data-dsg='on'] [data-conversation-tabs] [role='tab']:hover {
+  color: var(--dsw-alias-label-primary);
+}
+html[data-dsg='on'] [data-conversation-tabs] [role='tab']:hover::after {
+  background: rgba(77, 107, 254, 0.22);
+}
+html[data-dsg='on'] [data-conversation-tabs] [role='tab'][aria-selected='true'] {
+  color: var(--dsg-blue);
+  font-weight: 600;
+}
+html[data-dsg='on'] [data-conversation-tabs] [role='tab'][aria-selected='true']::after {
+  background: var(--dsg-blue);
+  box-shadow: 0 2px 8px rgba(77, 107, 254, 0.35);
+}
+/* header 里的其它小控件（会话层级 lineage / 团队标签）弱化 */
+html[data-dsg='on'] [data-slot='conversation.header'] > header [class*='_label'] {
+  color: var(--dsw-alias-label-tertiary);
+}
+
+/* ============================================================
+   4. 右栏面板（外壳一层；内容卡片归 60-settings.css）
+   ============================================================ */
+html[data-dsg='on'] [data-rightbar-col] [data-sidebar-right-panel]:not([aria-hidden='true']) {
+  z-index: var(--dsh-dockkit-dock-layer, 10);
+  border-radius: var(--dsg-shell-radius) 0 0 var(--dsg-shell-radius);
+}
+html[data-dsg='on'] [data-rightbar-col] [data-sidebar-right-panel]:not([aria-hidden='true'])::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: inherit;
+  background-color: var(--dsg-fill-l2);
+  background-image: var(--dsg-sheen-l2);
+  box-shadow: inset 0.5px 0 0 var(--dsg-hairline-soft), inset 1px 0 0 rgba(255, 255, 255, 0.4);
+  -webkit-backdrop-filter: var(--dsg-backdrop-l2);
+  backdrop-filter: var(--dsg-backdrop-l2);
+}
+/* 收起态显式清干净（容器仍在布局里） */
+html[data-dsg='on'] [data-rightbar-col] [data-sidebar-right-panel][aria-hidden='true']::before {
+  content: none;
+}
+html[data-dsg='on'] body[data-ds-dark-theme] [data-rightbar-col] [data-sidebar-right-panel]:not([aria-hidden='true'])::before {
+  box-shadow: inset 0.5px 0 0 rgba(255, 255, 255, 0.08);
+}
+/* dockkit tab strip：胶囊 tab */
+html[data-dsg='on'] [data-dockkit-strip] {
+  padding: 0 6px;
+}
+html[data-dsg='on'] [data-dockkit-strip] [data-dockkit-tab] {
+  border-radius: 9px;
+  color: var(--dsw-alias-label-tertiary);
+  transition: background-color 140ms var(--dsg-ease), color 140ms var(--dsg-ease);
+}
+html[data-dsg='on'] [data-dockkit-strip] [data-dockkit-tab]:hover {
+  background: var(--dsg-row-hover);
+  color: var(--dsw-alias-label-secondary);
+}
+html[data-dsg='on'] [data-dockkit-strip] [data-dockkit-tab][aria-selected='true'] {
+  background: var(--dsg-row-active);
+  color: var(--dsg-row-active-ink);
+}
+/* dockkit 分栏把手 / 内容区不铺底 */
+html[data-dsg='on'] [data-dockkit-pane],
+html[data-dsg='on'] [data-dockkit-content] {
+  background: transparent !important;
+}
+
+/* ============================================================
+   5. 滚动条：宿主局部覆盖回本色（foundation 给的是全局细蓝条）
+   ============================================================ */
+html[data-dsg='on'] [data-conversation-scroll],
+html[data-dsg='on'] [data-sidebar-right-panel] [data-dockkit-pane] {
+  --dsh-scrollbar-thumb: rgba(77, 107, 254, 0.22);
+  --dsh-scrollbar-thumb-hover: rgba(77, 107, 254, 0.36);
+}

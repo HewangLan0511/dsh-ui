@@ -1,0 +1,345 @@
+/* ============================================================================
+   dsh-ui-deepseek · 40 content surfaces (conversation, cards, code, tools)
+   ----------------------------------------------------------------------------
+   Tier map (docs/DESIGN-SPEC §7.4 + UI-CONTRACT §3):
+     L1  content canvas / long tool output plates  → fill-l1, no canvas blur
+     L2  user bubbles, think trigger, tool rows, deliverable/plan cards
+     L3  (owned by 50-overlays.css) dialogs, menus, question/plan/approval
+   Hard rules honoured here:
+     · every [class*="_bubble"] rule carries :not([role="tooltip"])
+     · no backdrop-filter on scroll containers ([data-conversation-scroll])
+     · code / logs / terminal / inline code keep a near-opaque plate
+     · sticky carriers (code banner, reasoning header) are re-painted, because
+       foundation made --dsw-alias-bg-base transparent
+   ========================================================================== */
+
+/* ---- local high-opacity plates (readability floor for code/logs) --------- */
+html[data-dsg='on'] body {
+  --dsg-code-solid: rgba(255, 255, 255, 0.86);
+  --dsg-code-banner: rgba(255, 255, 255, 0.95);
+  --dsg-code-inline: rgba(255, 255, 255, 0.88);
+  --dsg-tool-plate: rgba(255, 255, 255, 0.8);
+  --dsg-tool-plate-strong: rgba(255, 255, 255, 0.9);
+  --dsg-row-capsule: color-mix(in srgb, var(--dsg-blue) 4%, var(--dsg-fill-l2));
+  --dsg-row-capsule-hover: color-mix(in srgb, var(--dsg-blue) 8%, var(--dsg-fill-l2));
+}
+html[data-dsg='on'] body[data-ds-dark-theme] {
+  --dsg-code-solid: rgba(18, 27, 45, 0.9);
+  --dsg-code-banner: rgba(22, 32, 52, 0.96);
+  --dsg-code-inline: rgba(24, 35, 56, 0.92);
+  --dsg-tool-plate: rgba(17, 26, 43, 0.86);
+  --dsg-tool-plate-strong: rgba(20, 30, 49, 0.94);
+  --dsg-row-capsule: color-mix(in srgb, var(--dsg-blue) 12%, var(--dsg-fill-l2));
+  --dsg-row-capsule-hover: color-mix(in srgb, var(--dsg-blue) 18%, var(--dsg-fill-l2));
+}
+
+/* ============================================================================
+   1. conversation flow rhythm
+   ========================================================================== */
+html[data-dsg='on'] [data-chat-flow] {
+  --dsh-chat-flow-gap: 10px;
+}
+/* slight breathing room after a user turn / before tool groups */
+html[data-dsg='on'] [data-chat-flow] > [data-chat-flow-kind='user'] {
+  margin-bottom: 4px;
+}
+html[data-dsg='on'] [data-chat-flow] > [data-chat-flow-kind='turn-process'] {
+  margin-top: 6px;
+}
+
+/* ============================================================================
+   2. user bubbles — L2 glass (soft blue-white), readable ink
+   ========================================================================== */
+html[data-dsg='on'] [class*='_bubble']:not([role='tooltip']) {
+  position: relative;
+  background-color: color-mix(in srgb, var(--dsg-blue) 9%, var(--dsg-fill-l2));
+  background-image: var(--dsg-sheen-l2);
+  -webkit-backdrop-filter: var(--dsg-backdrop-l2);
+  backdrop-filter: var(--dsg-backdrop-l2);
+  border-radius: var(--dsg-radius-card);
+  box-shadow:
+    var(--dsg-bevel-l2),
+    0 0 0 0.5px rgba(77, 107, 254, 0.14);
+  color: var(--dsw-alias-label-primary);
+  line-height: 1.62;
+  transition:
+    box-shadow var(--dsg-motion-dur) var(--dsg-ease),
+    background-color var(--dsg-motion-dur) var(--dsg-ease);
+}
+html[data-dsg='on'] [class*='_bubble']:not([role='tooltip']):hover {
+  box-shadow:
+    var(--dsg-bevel-l2),
+    0 0 0 0.5px rgba(77, 107, 254, 0.16);
+}
+html[data-dsg='on'] body[data-ds-dark-theme] [class*='_bubble']:not([role='tooltip']) {
+  background-color: color-mix(in srgb, var(--dsg-blue) 12%, var(--dsg-fill-l2));
+  box-shadow:
+    var(--dsg-bevel-l2),
+    0 0 0 0.5px rgba(120, 150, 255, 0.16);
+}
+/* the assistant text column has no plate — it sits on the L1 canvas */
+html[data-dsg='on'] [data-chat-flow] [class*='_userStack'] {
+  gap: 8px;
+}
+
+/* ============================================================================
+   3. disclosure capsules — think trigger rows + tool call rows (L2)
+   ========================================================================== */
+html[data-dsg='on'] [data-chat-flow] [data-disclosure-header] {
+  box-sizing: border-box;
+  border-radius: 12px;
+  background-color: var(--dsg-fill-l1);
+  background-image: var(--dsg-sheen-l1);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.32);
+  padding: 1px 8px;
+  transition:
+    background-color var(--dsg-motion-dur) var(--dsg-ease),
+    box-shadow var(--dsg-motion-dur) var(--dsg-ease);
+}
+html[data-dsg='on'] [data-chat-flow] :is([data-variant='think'], [data-tool]) [data-disclosure-header] {
+  background-color: var(--dsg-row-capsule);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 0 0 0.5px rgba(56, 88, 158, 0.12);
+}
+html[data-dsg='on'] [data-chat-flow] [data-disclosure-header]:hover,
+html[data-dsg='on'] [data-chat-flow] [data-disclosure-header]:has(> [data-disclosure-row][aria-expanded='true']) {
+  background-color: var(--dsg-row-capsule-hover);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 0 0 0.5px rgba(56, 88, 158, 0.16),
+    0 6px 18px -12px rgba(44, 74, 140, 0.45);
+}
+html[data-dsg='on'] body[data-ds-dark-theme] [data-chat-flow] :is([data-variant='think'], [data-tool]) [data-disclosure-header] {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 0 0 0.5px rgba(150, 180, 255, 0.14);
+}
+
+/* turn trigger strip (recorded trigger above a turn) — L2 glass card */
+html[data-dsg='on'] [data-turn-trigger] {
+  background-color: color-mix(in srgb, var(--dsg-blue) 4%, var(--dsg-fill-l2));
+  background-image: var(--dsg-sheen-l2);
+  -webkit-backdrop-filter: var(--dsg-backdrop-l2);
+  backdrop-filter: var(--dsg-backdrop-l2);
+  border: 0;
+  border-radius: var(--dsg-radius-card);
+  box-shadow: var(--dsg-bevel-l2);
+  transition: box-shadow var(--dsg-motion-dur) var(--dsg-ease);
+}
+html[data-dsg='on'] [data-turn-trigger]:hover {
+  background-color: color-mix(in srgb, var(--dsg-blue) 7%, var(--dsg-fill-l2));
+  background-image: var(--dsg-sheen-l2);
+  box-shadow:
+    var(--dsg-bevel-l2),
+    0 0 0 0.5px rgba(77, 107, 254, 0.14);
+}
+html[data-dsg='on'] [data-turn-trigger] [class*='_header'] {
+  border-radius: inherit;
+}
+html[data-dsg='on'] [data-turn-trigger] [class*='_header']:hover {
+  background-color: transparent;
+}
+
+/* ============================================================================
+   4. reasoning (think) — expanded body stays transparent, sticky header painted
+   ========================================================================== */
+html[data-dsg='on'] [data-variant='think'] [class*='_thinkBody'] {
+  color: var(--dsw-alias-label-secondary);
+  line-height: 1.66;
+}
+html[data-dsg='on'] [data-variant='think'] [data-open] [data-disclosure-header] {
+  background-color: var(--dsg-code-banner);
+  background-image: none;
+  border-radius: 10px;
+  box-shadow: 0 1px 0 var(--dsg-border-hair);
+}
+/* compaction / context fold sticky header (was --dsw-alias-bg-base = transparent) */
+html[data-dsg='on'] [class*='_compactionRow']:has([class*='_compactionBody']) [class*='_compactionButton'] {
+  background-color: var(--dsg-code-banner);
+  box-shadow: 0 1px 0 var(--dsg-border-hair);
+}
+
+/* ============================================================================
+   5. tool results — flat L1 plates, near opaque (code / logs / diffs)
+   ========================================================================== */
+html[data-dsg='on'] [data-slot='tool.call.toolview'] [data-inspect],
+html[data-dsg='on'] [data-chat-flow-kind='context'] [data-context-injection-body],
+html[data-dsg='on'] [data-terminal],
+html[data-dsg='on'] [data-tool='read'] [data-read],
+html[data-dsg='on'] [data-tool='grep'] [data-search='matches'],
+html[data-dsg='on'] [data-tool='glob'] [data-search='paths'],
+html[data-dsg='on'] [data-tool='write'] [data-diff],
+html[data-dsg='on'] [data-variant='others'] [class*='_ioCard'] {
+  background-color: var(--dsg-tool-plate);
+  border: 0.5px solid var(--dsg-border-hair);
+  border-radius: 12px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 10px 28px -22px rgba(44, 74, 140, 0.4);
+  color: var(--dsw-alias-label-primary);
+}
+html[data-dsg='on'] body[data-ds-dark-theme] [data-slot='tool.call.toolview'] [data-inspect],
+html[data-dsg='on'] body[data-ds-dark-theme] [data-terminal],
+html[data-dsg='on'] body[data-ds-dark-theme] [data-tool='read'] [data-read],
+html[data-dsg='on'] body[data-ds-dark-theme] [data-tool='grep'] [data-search='matches'],
+html[data-dsg='on'] body[data-ds-dark-theme] [data-tool='glob'] [data-search='paths'],
+html[data-dsg='on'] body[data-ds-dark-theme] [data-tool='write'] [data-diff] {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 10px 28px -22px rgba(0, 0, 0, 0.6);
+}
+/* long scroll bodies keep their own plate; never add blur here */
+html[data-dsg='on'] [data-slot='tool.call.toolview'] [class*='_bodyScroll'],
+html[data-dsg='on'] [data-slot='tool.call.toolview'] [class*='_list'] {
+  scrollbar-gutter: stable;
+}
+/* diff semantic colours stay untouched (host tokens) but need a solid floor */
+html[data-dsg='on'] [data-tool='write'] [data-diff] [data-diff-line],
+html[data-dsg='on'] [data-review-view] [class*='_line'],
+html[data-dsg='on'] [data-review-view] [class*='_splitLine'] {
+  box-shadow: none;
+}
+
+/* ============================================================================
+   6. code blocks — near-opaque plate + painted sticky banner
+   ========================================================================== */
+html[data-dsg='on'] .md-code-block {
+  --dsl-code-block-background: transparent;
+  --dsl-code-block-banner-background-color: var(--dsg-code-banner);
+  background-color: var(--dsg-code-solid);
+  background-image: var(--dsg-sheen-l1);
+  border: 0.5px solid var(--dsg-border-hair);
+  border-radius: 14px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    0 14px 34px -26px rgba(44, 74, 140, 0.5);
+  /* no overflow:hidden here — it would kill the banner's position:sticky */
+}
+html[data-dsg='on'] .md-code-block :where(pre) {
+  padding: 13px 16px;
+  border-radius: 0 0 14px 14px;
+}
+html[data-dsg='on'] .md-code-block [class*='_bannerWrap'] {
+  background-color: var(--dsg-code-banner);
+  border-radius: 14px 14px 0 0;
+  box-shadow: 0 1px 0 var(--dsg-border-hair);
+}
+html[data-dsg='on'] .md-code-block [class*='_banner'] {
+  background: transparent;
+  padding: 7px 12px;
+}
+html[data-dsg='on'] .md-code-block [class*='_infostring'] {
+  color: var(--dsw-alias-label-secondary);
+  letter-spacing: 0.02em;
+}
+html[data-dsg='on'] .md-code-block [class*='_copyButton'] {
+  border-radius: 8px;
+  padding: 2px 8px;
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--dsw-alias-label-secondary);
+  background-color: color-mix(in srgb, var(--dsg-blue) 6%, transparent);
+  transition:
+    background-color var(--dsg-motion-dur) var(--dsg-ease),
+    color var(--dsg-motion-dur) var(--dsg-ease);
+}
+html[data-dsg='on'] .md-code-block [class*='_copyButton']:hover {
+  background-color: var(--dsg-blue-soft);
+  color: var(--dsg-blue-strong);
+}
+html[data-dsg='on'] .md-code-block [class*='_lineNumber'],
+html[data-dsg='on'] .md-code-block [class*='_numbered'] :where(pre) code > .line::before {
+  color: var(--dsw-alias-label-caption);
+}
+
+/* inline code: opaque chip, never a backdrop-filter (inline boxes smear rows) */
+html[data-dsg='on'] [data-chat-flow] :not(pre) > code,
+html[data-dsg='on'] [class*='_markdown'] :not(pre) > code {
+  background-color: color-mix(in srgb, var(--dsg-blue) 6%, var(--dsg-code-inline));
+  border-color: rgba(77, 107, 254, 0.16);
+  border-radius: 6px;
+  color: var(--dsw-alias-label-primary);
+}
+
+/* ============================================================================
+   7. deliverables / plan cards / trajectory panes — L2 cards
+   ========================================================================== */
+html[data-dsg='on'] [data-presented-file],
+html[data-dsg='on'] [data-changed-files],
+html[data-dsg='on'] [data-plan-card],
+html[data-dsg='on'] [data-plan-artifacts] > * {
+  background-color: var(--dsg-fill-l2);
+  background-image: var(--dsg-sheen-l2);
+  border: 0.5px solid var(--dsg-border-hair);
+  border-radius: 14px;
+  box-shadow: var(--dsg-bevel-l1);
+  transition:
+    box-shadow var(--dsg-motion-dur) var(--dsg-ease),
+    background-color var(--dsg-motion-dur) var(--dsg-ease);
+}
+html[data-dsg='on'] [data-presented-file]:hover,
+html[data-dsg='on'] [data-changed-files]:hover,
+html[data-dsg='on'] [data-plan-card]:hover {
+  background-color: color-mix(in srgb, var(--dsg-blue) 4%, var(--dsg-fill-l2));
+  box-shadow: var(--dsg-bevel-l2);
+}
+/* the plan card is a 60px row — give it a calmer inner surface */
+html[data-dsg='on'] [data-plan-card] {
+  height: 60px;
+  padding: 8px 12px;
+}
+html[data-dsg='on'] [data-plan-card] [class*='_cardIcon'] {
+  background: color-mix(in srgb, var(--dsg-blue) 7%, rgba(255, 255, 255, 0.6));
+  border: 0.5px solid rgba(77, 107, 254, 0.14);
+  border-radius: 10px;
+}
+html[data-dsg='on'] body[data-ds-dark-theme] [data-plan-card] [class*='_cardIcon'] {
+  background: color-mix(in srgb, var(--dsg-blue) 16%, rgba(255, 255, 255, 0.04));
+}
+
+/* trajectory: big scrollable table pane → flat L2 wash, no backdrop-filter */
+html[data-dsg='on'] [class*='_tablePane'],
+html[data-dsg='on'] [class*='_overviewPreview'],
+html[data-dsg='on'] [class*='_programPanel'] {
+  background-color: var(--dsg-fill-l2);
+  border: 0.5px solid var(--dsg-border-hair);
+  border-radius: 14px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+html[data-dsg='on'] [class*='_tablePane']:has([data-trajectory-scroll]),
+html[data-dsg='on'] [class*='_overviewPreview'] {
+  --dsh-scrollbar-thumb: var(--dsw-alias-scrollbar-bg-l2);
+  --dsh-scrollbar-thumb-hover: var(--dsw-alias-scrollbar-hover-l2);
+}
+
+/* ============================================================================
+   8. message meta / actions — quiet hover, blue focus only
+   ========================================================================== */
+html[data-dsg='on'] [data-chat-flow] [class*='_actions'] [class*='_action'] {
+  border-radius: 8px;
+  color: var(--dsw-alias-label-tertiary);
+  transition: background-color var(--dsg-motion-dur) var(--dsg-ease);
+}
+html[data-dsg='on'] [data-chat-flow] [class*='_actions'] [class*='_action']:hover {
+  background-color: rgba(77, 107, 254, 0.08);
+  color: var(--dsw-alias-label-secondary);
+}
+
+/* ============================================================================
+   9. fallback legs — no backdrop-filter support / software rasteriser
+   ========================================================================== */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  html[data-dsg='on'] [class*='_bubble']:not([role='tooltip']),
+  html[data-dsg='on'] [data-turn-trigger] {
+    background-color: var(--dsg-code-solid);
+    background-image: none;
+  }
+}
+html[data-dsg='on'] body[data-dsg-fallback] [class*='_bubble']:not([role='tooltip']),
+html[data-dsg='on'] body[data-dsg-fallback] [data-turn-trigger] {
+  background-color: var(--dsg-code-solid);
+  background-image: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}

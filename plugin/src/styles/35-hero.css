@@ -1,0 +1,161 @@
+/* ============================================================================
+   dsh-ui-deepseek · 35 hero — 空会话 Hero（品牌标记 / 大标题 / lede 位 / workspace 控件 / 输入卡）
+   Owner: shell-dev.
+
+   Hero 的真实结构（conversation 包 ConversationContent，phase=hero）：
+     [data-phase="hero"] .Dc7zOa_composerHero
+       ├ HeroShell.root  (Hqq-bq_root) → stack → headline(fish + titleGroup + previewBadge)
+       ├ heroWorkspaceRow（workspace / agentPreset 控件）
+       ├ dock 槽（goal / todo，空则 display:none）
+       └ inputBar（[data-composer-card]，hero 变体）
+   宿主在 hero 态把 [data-conversation-scroll] 设成 justify-content:center，
+   所以整组天然垂直居中；这里只做排版、字距、间距与控件胶囊化，不铺任何底板
+   （SURFACE-MAP §4.2：Hero 不铺底，避免与输入卡重复加雾）。
+   ========================================================================== */
+
+/* ---- 1. 组内节奏：标题 → 控件 → 输入卡 --------------------------------- */
+html[data-dsg='on'] [data-phase='hero'] [class*='_composerHero'] {
+  gap: 14px;
+  padding-bottom: 34px;
+}
+html[data-dsg='on'] [data-phase='hero'] [class*='_composerHero'] > :first-child {
+  margin-bottom: 6px;
+}
+
+/* ---- 2. Hero 标题：48px / 600 / 0.1em，东方气质的粗黑体 ---------------- */
+html[data-dsg='on'] [data-phase='hero'] [class*='_headline'] {
+  font-size: clamp(38px, 4.4vw, 48px);
+  line-height: 1.22;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--dsw-alias-label-primary);
+  text-wrap: balance;
+  justify-content: center;
+  gap: 12px;
+}
+/* 字距是给正文标题的；品牌标记与「预览版」角标不吃字距 */
+html[data-dsg='on'] [data-phase='hero'] [class*='_titleGroup'] {
+  gap: 0.28em;
+  justify-content: center;
+}
+html[data-dsg='on'] [data-phase='hero'] [class*='_fishHitbox'],
+html[data-dsg='on'] [data-phase='hero'] [data-slot='conversation.hero.brand.mark'] {
+  color: var(--dsg-blue);
+  margin-right: 0.1em;
+}
+html[data-dsg='on'] [data-phase='hero'] [class*='_fishHitbox'] svg,
+html[data-dsg='on'] [data-phase='hero'] [data-slot='conversation.hero.brand.mark'] svg {
+  width: 42px;
+  height: 42px;
+  color: var(--dsg-blue);
+}
+/* 「预览版」角标：品牌蓝弱底小胶囊 */
+html[data-dsg='on'] [data-phase='hero'] [class*='_previewBadge'] {
+  padding: 1px 8px;
+  margin-top: 8px;
+  border-radius: 999px;
+  border: 0.5px solid rgba(77, 107, 254, 0.2);
+  background: var(--dsg-blue-soft);
+  color: var(--dsg-blue);
+  font-family: var(--dsw-font-family);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 18px;
+  letter-spacing: 0.02em;
+  align-self: center;
+}
+
+/* ---- 3. workspace / preset 控件：居中胶囊 ------------------------------- */
+html[data-dsg='on'] [data-phase='hero'] [class*='_heroWorkspaceRow'] {
+  justify-content: center;
+  padding: 0 8px;
+  margin-top: 0;
+  gap: 8px;
+}
+html[data-dsg='on'] [data-phase='hero'] [class*='_heroWorkspaceRow'] button,
+html[data-dsg='on'] [data-phase='hero'] [class*='_heroOptions'] button,
+html[data-dsg='on'] [data-phase='hero'] [data-slot='conversation.hero.workspace'] button,
+html[data-dsg='on'] [data-phase='hero'] [data-slot='conversation.hero.agentPreset'] button {
+  height: 30px;
+  padding: 0 11px;
+  gap: 6px;
+  border-radius: 999px;
+  border: 0.5px solid var(--dsg-hairline-soft);
+  background: var(--dsg-capsule);
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12.5px;
+  font-weight: 500;
+  transition: background-color 140ms var(--dsg-ease), color 140ms var(--dsg-ease),
+    transform 140ms var(--dsg-ease), border-color 140ms var(--dsg-ease);
+}
+html[data-dsg='on'] [data-phase='hero'] [class*='_heroWorkspaceRow'] button:hover,
+html[data-dsg='on'] [data-phase='hero'] [class*='_heroOptions'] button:hover,
+html[data-dsg='on'] [data-phase='hero'] [data-slot='conversation.hero.workspace'] button:hover,
+html[data-dsg='on'] [data-phase='hero'] [data-slot='conversation.hero.agentPreset'] button:hover {
+  background: var(--dsg-capsule-hover);
+  border-color: rgba(77, 107, 254, 0.2);
+  color: var(--dsw-alias-label-primary);
+  transform: translateY(-1px);
+}
+html[data-dsg='on'] [data-phase='hero'] [class*='_heroWorkspaceRow'] svg {
+  color: var(--dsw-alias-label-tertiary);
+}
+
+/* ---- 4. Hero 里的输入卡：更高的呼吸感（宽度固定 760，不被 hero 变体的双层 padding 吃掉）--- */
+/* hero 结构是 composerHero(+32 clearance) → RlGAzG_root(padding 16×2) → card，
+   若继续用 `calc(100% - 48px)` 会算出 760−48=712；这里用绝对 760（max-width 不强制宽度，
+   窄窗仍按 100% 收缩）。 */
+html[data-dsg='on'] [data-phase='hero'] {
+  --dsh-composer-card-max-width: 760px;
+}
+html[data-dsg='on'] [data-phase='hero'] [data-composer-card] {
+  border-radius: 28px;
+}
+html[data-dsg='on'] [data-phase='hero'] [data-composer-card] [class*='_input'] {
+  min-height: 54px;
+  padding-top: 10px !important;
+  font-size: 15.5px !important;
+  line-height: 26px !important;
+}
+html[data-dsg='on'] [data-phase='hero'] [data-composer-card] [class*='_placeholder'] {
+  top: 10px !important;
+  font-size: 15.5px !important;
+  line-height: 26px;
+}
+/* hero 态 dock 为空时不留缝 */
+html[data-dsg='on'] [data-phase='hero'] [data-composer-dock]:empty {
+  display: none;
+}
+
+/* ---- 5. 入场：轻微上浮（240ms，reduced-motion 由 foundation 收掉） ------ */
+@keyframes dsg-hero-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+html[data-dsg='on'] [data-phase='hero'] [class*='_composerHero'] > * {
+  animation: dsg-hero-rise 260ms var(--dsg-ease) both;
+}
+html[data-dsg='on'] [data-phase='hero'] [class*='_composerHero'] > :nth-child(2) {
+  animation-delay: 60ms;
+}
+html[data-dsg='on'] [data-phase='hero'] [class*='_composerHero'] > :nth-child(3) {
+  animation-delay: 110ms;
+}
+html[data-dsg='on'] [data-phase='hero'] [class*='_composerHero'] > :nth-child(4) {
+  animation-delay: 150ms;
+}
+html[data-dsg='on'] [data-phase='hero'] [class*='_headline'] {
+  animation: dsg-hero-rise 300ms var(--dsg-ease) both;
+}
+
+/* ---- 6. 深色：品牌蓝标记提亮 ------------------------------------------- */
+html[data-dsg='on'] body[data-ds-dark-theme] [data-phase='hero'] [class*='_fishHitbox'] svg,
+html[data-dsg='on'] body[data-ds-dark-theme] [data-phase='hero'] [data-slot='conversation.hero.brand.mark'] svg {
+  color: #9fb4ff;
+}
