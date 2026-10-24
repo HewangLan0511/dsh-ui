@@ -20,7 +20,6 @@ public class DshClick{
  [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
  [DllImport("user32.dll")] public static extern void keybd_event(byte vk,byte scan,uint flags,UIntPtr extra);
  public static void Focus(IntPtr h){ if(GetForegroundWindow()==h) return; ShowWindow(h,9); keybd_event(0x12,0,0,UIntPtr.Zero); System.Threading.Thread.Sleep(60); keybd_event(0x12,0,2,UIntPtr.Zero); System.Threading.Thread.Sleep(120); SetForegroundWindow(h);}
- [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
  [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr h);
  [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h,out RECT r);
  [DllImport("dwmapi.dll")] public static extern int DwmGetWindowAttribute(IntPtr h,int a,out RECT r,int c);

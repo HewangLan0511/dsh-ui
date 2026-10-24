@@ -75,6 +75,7 @@ git checkout baseline-v0 -- .
 - [x] 右侧边栏玻璃化：文件浏览器 / 上下文洞察共享对话背景（v1.5-ui）
 - [x] 拖动分栏性能优化（resize guard）+ 设置页中文（v1.6-ui）
 - [x] 改名 `dsh-skin-mistblue`（雾蓝），旧配置迁移（v1.7-ui）
+- [x] 收起态标题栏：图标几何/中性色、隐藏更新蓝点、tooltip 不再被玻璃染色（v1.8-ui）
 - [ ] 可选后续：菜单/审批卡/右栏文档预览的人工视觉复核；壁纸共存回归；生成式云雾背景
 
 ## 2026-10-24 追加修复：Windows 标题栏
@@ -125,3 +126,15 @@ git checkout baseline-v0 -- .
 - 安装：desktop profile 通过 `plugin_manager` 以 link 方式重装为
   `dsh-skin-mistblue` → 本仓库 `plugin/`。
 - 新增交付标签：`v1.7-ui`。
+
+## 2026-10-24 追加：收起态标题栏修复
+
+- **新建会话图标错位/过蓝**：基础胶囊规则（38px 高、margin、品牌蓝 svg）漏进了收起态
+  28×28 的标题栏按钮；现在收起态把几何完全交回宿主，图标 16px、中性墨色，hover 才提亮。
+- **展开/折叠图标上的蓝点**：那是 DSH 的桌面更新徽标（`sidebar.toggle.badge`）；
+  收起态隐藏该徽标，更新提示仍保留在展开态 footer 的「新版本」胶囊。
+- **悬停时的“黑色阴影”**：其实是这两个按钮的 tooltip 被悬浮玻璃 header 盖住并染色；
+  现在只在 tooltip 挂载时提升侧栏列的层叠，让 tooltip 正常浮在最上层。
+- 实现：`plugin/src/styles/20-sidebar.css` §7、`plugin/src/styles/21-collapsed-titlebar.css`；
+  截图与根因见 [`docs/REPORT.md`](docs/REPORT.md) 第 14 节。
+- 新增交付标签：`v1.8-ui`。

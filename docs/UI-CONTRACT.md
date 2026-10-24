@@ -102,4 +102,11 @@ node tools/build-plugin.mjs     # 合并 src/styles/*.css（按文件名排序�
    `locale/change` 重渲染。不要在模块作用域缓存语言。
 3. **工具**：`tools/test-plugin-logic.mjs` 是这两个机制的回归测试，提交前必须跑通；
    `tools/dsh-drag.ps1` 可复现拖动（会临时改窗口焦点，注意不要在用户输入时使用）。
+4. **收起态标题栏（v1.8 起）**：
+   - 收起态「展开/折叠」和「新建会话」是宿主 `position:fixed` 钉在标题栏里的 28×28 按钮；
+     基础胶囊规则（高度/margin/品牌蓝）只能作用于展开态，收起态必须把几何交回宿主。
+   - `sidebar.toggle.badge`（桌面更新蓝点）在收起态隐藏，更新提示保留在展开态 footer 胶囊。
+   - 这两个按钮的 tooltip 位于侧栏列的层叠上下文里，必须用
+     `21-collapsed-titlebar.css` 的 `:has([role='tooltip'])` 守卫把它抬到悬浮 header 之上，
+     否则 tooltip 会被玻璃 header 染色成灰黑「阴影」。
 

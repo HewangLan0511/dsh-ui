@@ -316,11 +316,45 @@ html[data-dsg='on'] [data-slot='sidebar'] [class*='_indicator']:hover {
 }
 
 /* ---- 7. 收起态（56px rail）：不要胶囊化，也不叠底 ---------------------- */
+/* 收起态两个 28×28 的标题栏按钮（展开/折叠 + 新建会话）由宿主用 position:fixed
+   钉在原生标题栏里；这里必须把几何完全交回宿主（28×28、无 margin/内边距），
+   只统一“材质”—— 否则基础规则的 38px 高/12px 圆角/品牌蓝图标会把 + 号顶歪。*/
 html[data-dsg='on'] [data-sidebar-collapsed] [data-slot='sidebar'] button[class*='_newSession'] {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 8px !important;
   background: transparent !important;
-  border-color: transparent !important;
   box-shadow: none !important;
   transform: none !important;
+  color: var(--dsw-alias-label-secondary) !important;
+}
+html[data-dsg='on'] [data-sidebar-collapsed] [data-slot='sidebar'] button[class*='_newSession'] [class*='_newSessionContent'] {
+  padding: 0 !important;
+  gap: 0 !important;
+  justify-content: center !important;
+}
+/* 收起态的 + 号回到中性墨色（品牌蓝只留给展开态的主 CTA），并与 panel 图标同尺寸 */
+html[data-dsg='on'] [data-sidebar-collapsed] [data-slot='sidebar'] button[class*='_newSession'] [class*='_newSessionContent'] > svg {
+  color: var(--dsw-alias-label-secondary) !important;
+  width: 16px !important;
+  height: 16px !important;
+}
+html[data-dsg='on'] [data-sidebar-collapsed] [data-slot='sidebar'] button[class*='_newSession']:hover {
+  background: var(--dsg-row-hover) !important;
+  color: var(--dsw-alias-label-primary) !important;
+}
+html[data-dsg='on'] [data-sidebar-collapsed] [data-slot='sidebar'] button[class*='_newSession']:hover [class*='_newSessionContent'] > svg {
+  color: var(--dsw-alias-label-primary) !important;
+}
+/* 收起按钮右上角是「桌面更新」徽标（6px 品牌蓝圆点）；收起态只需要一个干净的
+   panel 图标 —— 更新提示仍保留在展开态 footer 的「新版本」胶囊里。 */
+html[data-dsg='on'] [data-sidebar-collapsed] [data-slot='sidebar'] button[class*='_toggle'] [class*='_badge'] {
+  display: none !important;
 }
 html[data-dsg='on'] [data-sidebar-collapsed] [data-slot='sidebar'] [class*='_panelList'] {
   gap: 8px;

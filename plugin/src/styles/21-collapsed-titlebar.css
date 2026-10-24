@@ -1,0 +1,9 @@
+/* 收起态（标题栏里的 rail 按钮）的 tooltip 修复 ---------------------------------
+   Windows 标题栏里「展开/折叠」与「新建会话」两个按钮在收起态是 position:fixed、
+   位于侧栏列内；它们的 tooltip 因此落在侧栏列的层叠上下文里。悬浮 header 现在是
+   一条带霜的玻璃条，会盖住 tooltip 并把它染成一块灰黑"阴影"（用户看到的"黑色阴影"）。
+   这里只在 tooltip 真的挂载时把 rail 提到 header 之上，让 tooltip 正常浮在下拉层，
+   不影响静止态层次。 */
+html[data-dsg='on'][data-windows-titlebar] div:has(> [data-slot='sidebar']):has([role='tooltip']) {
+  z-index: 120;
+}

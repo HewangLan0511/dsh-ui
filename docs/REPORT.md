@@ -391,6 +391,48 @@ effAlpha = floor + a · (1 − floor)        floor = 0.45（浅）/ 0.59（深�
 > 注意：改名涉及 `package.json` 与 bundle 行，属于 host 侧元数据；如果 DSH 不是
 > development 启动，渲染进程不会自动重载，最坏情况下需要重启一次 DSH 才能看到新设置项名称。
 
+---
+
+## 14. 收起态标题栏三处问题（2026-10-24 第八轮，`v1.8-ui`）
+
+用户反馈收起侧栏后：
+1. 「应用」左边的「新建会话」按钮图案错位、颜色过于突出；
+2. 「展开/折叠」图标右上角多出一个不知名蓝色圆点；
+3. 悬停这两个选项时出现一块黑色阴影，疑似“详情页窗口没显示”。
+
+### 14.1 根因
+
+| 症状 | 根因 |
+|---|---|
+| + 号错位/过蓝 | 收起态两个按钮是宿主用 `position:fixed; left:12px/48px; width:28px;height:28px` 钉在标题栏里的；但我们的基础规则 `button[class*='_newSession']` 给了 `height:38px`、`margin`、12px 圆角，且 `+` 号 svg 颜色是品牌蓝。高优先级的基础规则把宿主 28×28 的几何顶歪，图标也随之溢出/下沉。 |
+| 蓝点 | 收起按钮内有一个 DSH 的「桌面更新」徽标插槽 `sidebar.toggle.badge`（`ui-settings-general` 的 `DesktopUpdateBadge`，`_badge` 6px 圆形、品牌蓝、绝对定位 top/right 2px）。它在收起态一直显示，对用户来说是个含义不明的点。 |
+| “黑色阴影” | 不是阴影，也不是丢窗口：它是这两个按钮的 **tooltip**（「打开侧边栏 Ctrl+B」/「新建会话 Ctrl+N」）。tooltip 渲染在**侧栏列的层叠上下文里**，而新的悬浮 header 是一条带霜的玻璃条、层级更高，把 tooltip 盖住并染色 → 只剩边缘透出的一圈灰黑色，看起来像阴影。用 `[role='tooltip']{background:#f03}` 探针验证：整条 header 被染红，确认 tooltip 就在玻璃后面。 |
+
+### 14.2 修法
+
+1. `20-sidebar.css §7`：收起态的 `_newSession` 完全交回宿主几何
+   （`28×28`、`margin/padding/border:0`、`8px` 圆角、透明底），图标与 panel 图标同尺寸（16px）、
+   颜色改 `--dsw-alias-label-secondary`；hover 才用 `--dsg-row-hover` 与主墨色。
+   （品牌蓝的 + 号只保留在展开态的主 CTA 胶囊里。）
+2. 收起态隐藏更新徽标：`[data-sidebar-collapsed] … button[class*='_toggle'] [class*='_badge'] { display:none }`；
+   更新提示仍保留在展开态 footer 的「新版本」胶囊，功能不丢。
+3. 新增 `21-collapsed-titlebar.css`：**只在 tooltip 真的挂载时**把侧栏列提升到悬浮 header 之上
+   （`div:has(> [data-slot='sidebar']):has([role='tooltip']) { z-index:120 }`），
+   让 tooltip 正常浮在最上层，静止态层次与玻璃外观不变。
+
+### 14.3 验证
+
+- 浅色：收起态两个图标对齐、无蓝点；悬停分别得到完整的深色 tooltip（不是灰影）。
+- 深色：同构通过，tooltip 浮在暗色玻璃 header 之上、白字清晰。
+- 展开态：胶囊按钮/品牌行/footer 均不受影响；`node tools/test-plugin-logic.mjs` 仍 9/9 PASS。
+
+| 场景 | 截图 |
+|---|---|
+| 浅色·收起态标题栏（无蓝点、+ 号对齐） | [`assets/final/collapsed-titlebar-light.png`](assets/final/collapsed-titlebar-light.png) |
+| 浅色·悬停 tooltip（不再是墨影） | [`assets/final/collapsed-titlebar-tooltip-light.png`](assets/final/collapsed-titlebar-tooltip-light.png) |
+| 深色·悬停 tooltip | [`assets/final/collapsed-titlebar-tooltip-dark.png`](assets/final/collapsed-titlebar-tooltip-dark.png) |
+
+
 
 
 
