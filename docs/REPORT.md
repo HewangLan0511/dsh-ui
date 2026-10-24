@@ -475,6 +475,43 @@ effAlpha = floor + a · (1 − floor)        floor = 0.45（浅）/ 0.59（深�
 | 浅色·图表悬停卡（几乎不透明玻璃，坐标字不再透出） | [`assets/final/tooltip-glass-light.png`](assets/final/tooltip-glass-light.png) |
 | 深色·同上 | [`assets/final/tooltip-glass-dark.png`](assets/final/tooltip-glass-dark.png) |
 
+---
+
+## 16. 收尾与发布（`v1.0.0`）
+
+第十轮收尾把十次界面迭代整合成可发布的 `dsh-skin-mistblue@1.0.0`：
+
+### 16.1 发布物料
+
+| 文件 | 作用 |
+|---|---|
+| `LICENSE` + `plugin/LICENSE` | MIT（2026 HewangLan0511），npm 包内读取 `plugin/LICENSE` |
+| `CHANGELOG.md` | 1.0.0 与 v1.0-ui → v1.10-ui 全部里程碑 |
+| `docs/RELEASE.md` | npm / GitHub 发布清单（含登录、tag、Release 附件、验收、回滚） |
+| `plugin/README.md` | npm 包页面说明（安装 / 设置 / 许可） |
+| `plugin/package.json` | `1.0.0`、`license: MIT`、`private` 移除、`keywords` / `files` 补全 |
+| `tools/release.mjs` | 构建 → 测试 → `npm pack` → `git archive` 源码 zip → SHA-256 |
+
+### 16.2 产物
+
+```powershell
+node tools/release.mjs
+# dist/dsh-skin-mistblue-1.0.0.tgz
+# dist/dsh-skin-mistblue-1.0.0-src.zip
+# dist/SHA256SUMS.txt
+```
+
+`dist/` 已加入 `.gitignore`；发布到 npm 与 GitHub Release 的步骤见 `docs/RELEASE.md`。
+本机 npm 未登录、没有 `gh`/SSH key、仓库无 remote，因此**最后两步上传需要账号侧操作**，
+其余（版本号、许可证、包内容、构建产物）已就绪。
+
+### 16.3 版本与标签
+
+- npm / 插件版本：`1.0.0`；
+- git tag：`v1.0.0`（发布提交），历史界面里程碑 `v1.0-ui` … `v1.10-ui` 全部保留；
+- profile 内 bundle 同步升级为 `1.0.0`（`plugin_manager install_bundle`），设置页入口不变。
+
+
 
 
 

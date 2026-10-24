@@ -1,155 +1,136 @@
-# DSH × DeepSeek Web — UI 玻璃化重构
+# dsh-skin-mistblue（雾蓝）
 
-以 DeepSeek 网页端（deepseek.com）的视觉语言为基准，重构 DSH（DeepSeek Harness）桌面/Web GUI 的界面与交互：
-整体透明、浅色空气感、大留白、柔光玻璃，弹窗/显示卡/详情卡按可读性分级加雾（backdrop blur）。
+> 把 DeepSeek 的海雾，做成 DSH 的一层玻璃。
 
-**状态：已交付。** 插件 **`dsh-skin-mistblue`（雾蓝）** 已安装并在 desktop profile 生效
-（v1.6 及以前名为 `dsh-ui-deepseek`；v1.7 起改名，localStorage 有迁移，旧设置不丢）。
-完整交付报告：[`docs/REPORT.md`](docs/REPORT.md)
+DeepSeek Harness（DSH）的玻璃质感皮肤：以 DeepSeek 网页端（deepseek.com）的视觉语言为基准，
+雾蓝渐变氛围背景 + 分层柔光玻璃，弹窗 / 显示卡 / 详情卡按可读性分级加雾，
+浅色与深色同构，设置页中英双语并跟随 DSH locale。
+
+**版本 `1.0.0` · MIT · 插件已安装在 desktop profile。**
+
+![Hero](docs/assets/final/hero.png)
+
+| 浅色 · 对话 | 深色 · 对话 |
+|---|---|
+| ![light](docs/assets/final/chat-light.png) | ![dark](docs/assets/final/chat-dark.png) |
+
+## 特性
+
+- **玻璃层级（L1 / L2 / L3）**：内容面、卡片、弹窗按可读性分级 `fill + backdrop-filter`；
+  大面一律只用一层霜（`::before` 唯一载体），避免固定定位祖先把 `backdrop-filter` 撕成灰块。
+- **氛围背景**：DeepSeek 蓝 `#4D6BFE` 雾蓝渐变 + 75px 极淡网格；支持壁纸共存（可选）。
+- **对话页悬浮玻璃 header**：会话标题 / 智能体 chips / tab 行收成一条内缩 18px 圆角玻璃条，
+  与输入卡同一套材质语言。
+- **右侧边栏共享背景**：文件浏览器、上下文洞察不再是叠了多层白板，玻璃只保留一层，
+  氛围直接透上来。
+- **Windows 原生标题栏统一**：标题栏 overlay、菜单条、网页侧标题栏三层同色同材质，
+  收起态图标几何交回宿主、蓝点隐藏、tooltip 不再被玻璃染色。
+- **悬停 tooltip 玻璃化**：原生 tooltip 与图表悬停卡统一高填充玻璃（94% / 96%），
+  文字可读优先，保留 16px 霜 + 釉 + 发丝边。
+- **拖动性能**：指针拖动 >4px 期间给根节点打 `data-dsg-resizing`，临时卸掉霜与超大投影，
+  松手即恢复，静止外观不变。
+- **i18n**：设置页文案动态读取 DSH `locale` 服务 / `<html lang>` / `navigator.language`，
+  默认中文，切换即时重渲染（不缓存）。
+
+| 设置 · 外观 | 轨迹 |
+|---|---|
+| ![settings](docs/assets/final/settings-plugins.png) | ![trajectory](docs/assets/final/trajectory.png) |
+
+| 右栏 · 上下文（浅） | 右栏 · 文件（深） |
+|---|---|
+| ![context](docs/assets/final/right-panel-context-glass.png) | ![files](docs/assets/final/right-panel-files-glass-dark.png) |
+
+## 安装
+
+### 从 npm（发布后）
+
+在 DSH 的插件管理页（或 `plugin_manager`）里安装 bundle：
+
+```text
+dsh-skin-mistblue
+```
+
+包内已声明 `dsh.bundle.patch`（`cordis.patch.yml`，bundle 行 id `mistblue`）与 web client 半部，
+安装后设置页出现「外观 · 雾蓝」。
+
+### 本地开发（本仓库）
+
+```powershell
+node tools/build-plugin.mjs          # 内联 src/styles/*.css -> plugin/lib/client.js
+# 然后用 DSH plugin_manager install_bundle，target 指向本仓库 plugin/ 绝对路径
+```
+
+已安装为链接模式时，改 `plugin/src/styles/*.css` 后重新 build，
+运行中的页面会 HMR 热更新（非 development 启动的 DSH 需重启）。
+
+### 安装到新环境
+
+```powershell
+# 1) 取包
+npm pack dsh-skin-mistblue            # 或从 GitHub Release 下载 tgz
+# 2) DSH 插件管理页 / plugin_manager 安装该 bundle
+```
+
+## 设置
+
+设置 → **外观 · 雾蓝**：
+
+- 配色：浅色 / 深色 / 跟随系统（默认浅色，DeepSeek 参考图基准）
+- 氛围背景：极光 / 轻雾 / 关闭
+- 玻璃透明度、模糊强度、动效开关
+
+## 兼容与边界
+
+- **Windows 桌面端**：原生标题栏（`titleBarOverlay`）与网页侧标题栏按同一实体色绘制；
+  自定义标题栏按钮的 tooltip 通过 `:has([role='tooltip'])` 只在浮层挂载时抬升层叠。
+- **不支持 `backdrop-filter`** 的环境：自动降级为高填充实体面（`data-dsg-fallback`），不出现"灰玻璃"。
+- **悬停预览卡（HoverCard）** 保持宿主材质（文件/图片预览玻璃化会洗白），不在皮肤覆盖范围内。
+- 皮肤只改样式层，不修改 DSH 宿主 HTML / 行为；卸载即恢复原样。
 
 ## 仓库结构
 
 ```
-baseline/            施工前快照（可回滚点）
-  profile/           当前 profile 的 cordis.patch.yml / package.json 副本
-  plugins/           ui-liteglass 与 wallpaper-engine 的当前配置
-  ui-theme/          DSH 主题 token 样式表（从 app.asar 提取）与 WE 玻璃 CSS 参考
-  screenshots/       施工前界面截图（current-ui.png）
-  reference/         DeepSeek 网页端参考图
-docs/                设计规格、玻璃引擎规格、DSH 页面/选择器清单、最终决策、报告
-  assets/final/      最终效果截图（hero / chat light+dark / settings / trajectory）
-plugin/              插件 dsh-skin-mistblue（雾蓝，本项目主要产物）
-  src/styles/        00 基础+玻璃引擎 · 10 壳层 · 20 左栏 · 30 输入区 · 35 Hero · 40 内容 · 50 浮层 · 60 设置 · 95 插件设置页
-  lib/client.js      构建产物（内联 CSS + React 设置页）
-tools/               构建 / 截图 / 提取 / 归档脚本
+plugin/               插件 dsh-skin-mistblue（本项目主要产物）
+  src/styles/         00 基础+玻璃引擎 · 10 壳层 · 20 左栏 · 30 输入区 · 35 Hero
+                      40 内容 · 50 浮层 · 60 设置 · 95 插件设置页
+  lib/client.js       构建产物（内联 CSS + React 设置页），勿手改
+  lib/index.js        host 半部（bundle 行注册）
+  locale/             zh.json / en.json
+  cordis.patch.yml    bundle 行（id mistblue）
+tools/                构建 / 截图 / 提取 / 回归 / 发布脚本
+docs/                 设计规格、玻璃引擎规格、表面清单、实现契约、逐轮报告
+baseline/             施工前快照（可回滚点 baseline-v0）
 ```
 
-## 设计目标（摘要）
-
-- **视觉**：DeepSeek 蓝 `#4D6BFE`、雾蓝白渐变氛围背景 + 75px 极淡网格、超大留白、圆角胶囊、柔和分层阴影。
-- **透明**：所有面板/卡片/浮层半透明，背景为 CSS 氛围层（可选：与 wallpaper-engine 壁纸共存）。
-- **可读性分级加雾**：L1 内容面 29%（6px）/ L2 卡片 40%（16px）/ L3 弹窗·详情 84.6%（24px，大 dialog 12px）。数值复用 wallpaper-engine 的玻璃/透明/模糊公式（`effAlpha = floor + a·(1−floor)`）。
-- **交互**：轻量动效（90–200ms）、hover 抬升/增亮、焦点环、胶囊按钮、发送按钮浮起；无夸张弹跳。
-
-## 使用
-
-- 插件已安装：设置 → 外观 → **外观 · DeepSeek** 可调：
-  - 配色：浅色 / 深色 / 跟随系统（默认浅色，DeepSeek 参考图基准）
-  - 氛围背景：极光 / 轻雾 / 关闭
-  - 玻璃透明度、模糊强度、动效开关
-- 直接修改 `plugin/src/styles/*.css` 后运行 `node tools/build-plugin.mjs`，已打开的页面会 HMR 热更新。
-
-## 开发与回滚
+## 开发
 
 ```powershell
-# 构建插件 client（CSS + JS 内联）
-node tools/build-plugin.mjs
-
-# 安装/更新：通过 DSH plugin_manager install_bundle，target 为 plugin 绝对路径
-# 回滚到施工前快照
-git checkout baseline-v0 -- .
-# 或卸载 bundle（见 docs/OPERATIONS.md）
+node tools/build-plugin.mjs          # 构建 client（11 个 CSS 内联）
+node tools/test-plugin-logic.mjs     # resize guard + i18n 回归（9/9）
+node tools/tooltip-preview.mjs       # tooltip 玻璃验证台（真实 CSS 层叠）
+node tools/release.mjs               # 构建 + npm pack + 源码 zip + 校验和（dist/）
 ```
 
-基线提交：`baseline-v0`；交付标签：`v1.0-ui`。
+回滚：
+
+```powershell
+git checkout baseline-v0 -- .        # 回到施工前快照
+# 或按 docs/OPERATIONS.md 卸载 bundle
+```
 
 ## 文档
 
-- [交付报告](docs/REPORT.md)
-- [DeepSeek 视觉规格](docs/DESIGN-SPEC.md)
-- [WE 玻璃逻辑提取](docs/GLASS-SPEC.md)
-- [DSH 表面/选择器清单](docs/SURFACE-MAP.md)
-- [最终取舍](docs/FINAL-DECISIONS.md) · [实现契约](docs/UI-CONTRACT.md) · [构建/安装/回滚](docs/OPERATIONS.md)
+- [交付报告（逐轮根因/修法/截图）](docs/REPORT.md)
+- [DeepSeek 视觉规格](docs/DESIGN-SPEC.md) · [玻璃引擎规格](docs/GLASS-SPEC.md)
+- [DSH 表面/选择器清单](docs/SURFACE-MAP.md) · [最终取舍](docs/FINAL-DECISIONS.md)
+- [实现契约](docs/UI-CONTRACT.md) · [构建/安装/回滚](docs/OPERATIONS.md)
+- [命名决定](docs/NAMING.md) · [发布清单](docs/RELEASE.md) · [CHANGELOG](CHANGELOG.md)
 
-## 状态
+## 版本
 
-- [x] 仓库初始化 + 基线快照
-- [x] 设计规格 / 玻璃引擎规格 / 页面清单
-- [x] 插件骨架 + 安装链路 + 设置页
-- [x] 壳层（背景、侧栏、标题栏、输入区、Hero）
-- [x] 内容面（消息、工具卡、代码块、轨迹、deliverables）
-- [x] 浮层（弹窗、设置、详情、菜单、通知、tooltip 豁免）
-- [x] 浅色/深色双主题 + 降级策略 + 动效
-- [x] 视觉验收（截图）+ 交互保持（fixed 浮层/命中区/滚动）
-- [x] 对话页顶层 header 悬浮玻璃条（v1.4-ui）
-- [x] 右侧边栏玻璃化：文件浏览器 / 上下文洞察共享对话背景（v1.5-ui）
-- [x] 拖动分栏性能优化（resize guard）+ 设置页中文（v1.6-ui）
-- [x] 改名 `dsh-skin-mistblue`（雾蓝），旧配置迁移（v1.7-ui）
-- [x] 收起态标题栏：图标几何/中性色、隐藏更新蓝点、tooltip 不再被玻璃染色（v1.8-ui）
-- [x] 所有悬停 tooltip 玻璃化（含图表悬停卡可读性），v1.10 调整为几乎不透明（v1.9-ui / v1.10-ui）
-- [ ] 可选后续：菜单/审批卡/右栏文档预览的人工视觉复核；壁纸共存回归；生成式云雾背景
+`1.0.0` — 汇总 v1.0-ui → v1.10-ui 十轮迭代（玻璃引擎、悬浮 header、右栏、拖动性能、
+中文设置、改名雾蓝、收起态标题栏、tooltip 玻璃化）。逐版本说明见 [CHANGELOG.md](CHANGELOG.md)。
 
-## 2026-10-24 追加修复：Windows 标题栏
+## License
 
-顶部原生标题栏（「应用 / 编辑」菜单条 + 窗口控制按钮）已与玻璃 UI 统一：
-不透明探针色 + 网页侧同色实体条 + 主题切换主动重同步 + 官方鲸标图标。
-原理与像素验证见 [`docs/REPORT.md`](docs/REPORT.md) 第 9 节；修复文件 `plugin/src/styles/12-windows-titlebar.css`。
-新增交付标签：`v1.1-ui`。
-
-## 2026-10-24 追加：对话页顶层玻璃 header
-
-对话页顶部（会话标题 + 智能体 chips + tab 行）从通栏乳白横条改为**悬浮玻璃条**，
-与输入框同一套材质语言：内缩 + 18px 圆角、17% 白填充 + 24px 霜、顶部镜面高光 + 发丝边、
-底部内侧厚度阴影 + 外投影；中列顶部另加淡蓝雾作为衬光，让「透明 / 模糊」真正可见。
-深色同构、窄窗与无霜/软件光栅化有回退。原理与实机截图见
-[`docs/REPORT.md`](docs/REPORT.md) 第 10 节；实现文件 `plugin/src/styles/10-shell.css`。
-新增交付标签：`v1.4-ui`。
-
-## 2026-10-24 追加：右侧边栏玻璃化
-
-右栏（文件浏览器 / 上下文洞察，含打开 tab 后的界面）原来是一块叠了好几层半透明白的「白板」：
-面板壳被 60-settings 与 10-shell 各画一遍玻璃，dockkit 的 panelBody / surface / tabHost / paneBody
-又各带一层底。现在玻璃只保留 `::before` 一层（浅 18% 白 / 深 46% `#0d1524`、22px 霜），
-所有中间容器清零，氛围层直接透上来 —— 右栏与对话区共享同一张背景，列表/统计卡在玻璃上自然分层。
-原理、采样与浅深两套截图见 [`docs/REPORT.md`](docs/REPORT.md) 第 11 节；
-实现文件 `plugin/src/styles/60-settings.css` §4 与 `plugin/src/styles/10-shell.css` §4。
-新增交付标签：`v1.5-ui`。
-
-## 2026-10-24 追加：拖动分栏性能 + 设置页中文
-
-- **拖动卡顿**：拖动左右分栏时每帧重排，几十个 `backdrop-filter` 玻璃面（尤其逐个挂霜的消息气泡）
-  每帧重采样 backdrop，是掉帧主因。现在 client 在指针拖动 >4px 时给 `<html>` 打
-  `data-dsg-resizing`，CSS 只在拖动期间卸掉霜与超大外投影（背后是平滑氛围层，观感几乎无差），
-  松手立即恢复，静止/拖动结束外观不变。
-- **设置页中文**：语言检测从「模块加载时缓存」改为每次读取 DSH `locale` 服务 / `<html lang>` /
-  `navigator.language`，未知时默认中文，并订阅 `locale/change` 即时重渲染。
-- 单元测试 `node tools/test-plugin-logic.mjs` 覆盖 drag guard 与 i18n 选择；
-  原理见 [`docs/REPORT.md`](docs/REPORT.md) 第 12 节。
-- 新增交付标签：`v1.6-ui`。
-
-## 2026-10-24 追加：改名为 `dsh-skin-mistblue`（雾蓝）
-
-- 插件正式定名 **dsh-skin-mistblue / 雾蓝（Mistblue）**：包名、bundle patch、模块 id、
-  设置页标题（「外观 · 雾蓝」）、locale 文案全部切换；
-- localStorage 键改为 `dsh-skin-mistblue/*`，并保留对旧键 `dsh-ui-deepseek/*` 的一次性读取迁移，
-  旧配置/配色不会丢；
-- 命名候选与取舍记录在 [`docs/NAMING.md`](docs/NAMING.md)；
-- 安装：desktop profile 通过 `plugin_manager` 以 link 方式重装为
-  `dsh-skin-mistblue` → 本仓库 `plugin/`。
-- 新增交付标签：`v1.7-ui`。
-
-## 2026-10-24 追加：收起态标题栏修复
-
-- **新建会话图标错位/过蓝**：基础胶囊规则（38px 高、margin、品牌蓝 svg）漏进了收起态
-  28×28 的标题栏按钮；现在收起态把几何完全交回宿主，图标 16px、中性墨色，hover 才提亮。
-- **展开/折叠图标上的蓝点**：那是 DSH 的桌面更新徽标（`sidebar.toggle.badge`）；
-  收起态隐藏该徽标，更新提示仍保留在展开态 footer 的「新版本」胶囊。
-- **悬停时的“黑色阴影”**：其实是这两个按钮的 tooltip 被悬浮玻璃 header 盖住并染色；
-  现在只在 tooltip 挂载时提升侧栏列的层叠，让 tooltip 正常浮在最上层。
-- 实现：`plugin/src/styles/20-sidebar.css` §7、`plugin/src/styles/21-collapsed-titlebar.css`；
-  截图与根因见 [`docs/REPORT.md`](docs/REPORT.md) 第 14 节。
-- 新增交付标签：`v1.8-ui`。
-
-## 2026-10-24 追加：悬停 tooltip 全面玻璃化
-
-- **图表详情卡透字**：`上下文趋势` 的悬停卡原来读 `--dsw-alias-bg-layer-2`（40% 白）且不挂霜，
-  坐标轴文字会透出来、坐标标记还会压到卡上；现在统一为 96% 填充 + 17.6px 霜（v1.10 起几乎不透明），
-  并把 `z-index` 提到 40。
-- **全部悬停 tooltip 换装**：`[role='tooltip']` 从"不透明深底白字"改为
-  几乎不透明的 94% 玻璃（16px 霜 + 釉 + 发丝边 + 轻投影），文字改用主题墨色；
-  快捷键 pill、无霜降级（98%）一并处理。
-- **v1.10 调整**：v1.9 的 74%/78% 在实机上仍偏透，按用户要求把填充率提到
-  **94% / 96%**（图表卡），只保留 ~4% 通透镜面感，彻底杜绝"透字"。
-- 验证台：`tools/tooltip-preview.mjs`（真实 CSS 层叠 + headless Edge 截图），
-  浅/深色效果见 [`docs/REPORT.md`](docs/REPORT.md) 第 15 节。
-- 新增交付标签：`v1.9-ui`；随后按用户要求改成"几乎不透明"，标签 `v1.10-ui`。
+[MIT](LICENSE) © 2026 HewangLan0511

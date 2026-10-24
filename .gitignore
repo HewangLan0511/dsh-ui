@@ -5,3 +5,4 @@ plugin/lib/client.generated.js
 *.log
 .tmp/
 screenshots/*.tmp.png
+dist/

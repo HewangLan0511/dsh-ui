@@ -1,9 +1,20 @@
 {
   "name": "dsh-skin-mistblue",
-  "version": "0.1.0",
-  "private": true,
+  "version": "1.0.0",
   "description": "Mistblue (雾蓝) — a DeepSeek-web inspired translucent glass skin for DeepSeek Harness: airy ambient background, liquid-glass surfaces, readability-tiered blur for cards, popups and detail panels.",
+  "license": "MIT",
   "type": "module",
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "deepseek",
+    "skin",
+    "theme",
+    "glass",
+    "glassmorphism",
+    "cordis",
+    "plugin"
+  ],
   "exports": {
     ".": "./lib/index.js",
     "./client": "./lib/client.js",
@@ -15,7 +26,9 @@
     "lib/client.js",
     "locale/*.json",
     "icon.svg",
-    "cordis.patch.yml"
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
   ],
   "dsh": {
     "bundle": {
