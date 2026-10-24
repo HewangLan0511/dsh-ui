@@ -42,17 +42,15 @@ DeepSeek Harness（DSH）的玻璃质感皮肤：以 DeepSeek 网页端（deepse
 - **i18n**：设置页文案动态读取 DSH `locale` 服务 / `<html lang>` / `navigator.language`，
   默认中文，切换即时重渲染（不缓存）。
 
-| 设置 · 外观 | 轨迹 |
+| 设置 · 插件 | 轨迹 |
 |---|---|
 | ![settings](docs/assets/final/settings-plugins.png) | ![trajectory](docs/assets/final/trajectory.png) |
 
-| 右栏 · 上下文（浅） | 右栏 · 文件（深） |
-|---|---|
-| ![context](docs/assets/final/right-panel-context-glass.png) | ![files](docs/assets/final/right-panel-files-glass-dark.png) |
+![上下文洞察页 · 浅色（含插件信息右栏）](docs/assets/final/right-panel-context-glass.png)
 
 ## 安装
 
-### 从 npm 安装（已发布 `1.0.0`）
+### 从 npm 安装（已发布 `1.0.4`）
 
 ```powershell
 npm install dsh-skin-mistblue
@@ -65,7 +63,7 @@ npm install dsh-skin-mistblue
 - **npm 包页**：<https://www.npmjs.com/package/dsh-skin-mistblue>
 - **GitHub**：<https://github.com/HewangLan0511/dsh-ui>
 - **Release 附件**（tgz / src zip / SHA256SUMS）：
-  <https://github.com/HewangLan0511/dsh-ui/releases/tag/v1.0.0>
+  <https://github.com/HewangLan0511/dsh-ui/releases/tag/v1.0.4>
 
 ### 本地开发（本仓库）
 
