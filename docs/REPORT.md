@@ -194,3 +194,55 @@ effAlpha = floor + a · (1 − floor)        floor = 0.45（浅）/ 0.59（深�
 ![标题栏·展开态](assets/final/titlebar-light.png)
 
 ![标题栏·收起态](assets/final/titlebar-collapsed.png)
+
+---
+
+## 10. 对话页顶层 header 玻璃化（2026-10-24 第四轮，仓库标签 `v1.4-ui`）
+
+### 10.1 诉求
+
+用户把对话页顶部（会话标题 + 「智能体团队 / 创造模式 / 子智能体」chips + `对话/轨迹/上下文/画廊/编队` tab 行）
+截图出来，要求这一层「添加跟输入框一样的透明效果、玻璃质感和模糊」。
+
+### 10.2 为什么原来看起来是「白条」而不是玻璃
+
+- header 原先已是 L2 配方：`--dsg-fill-l2`（≈39.8% 白）+ 顶部釉光 + `--dsg-backdrop-l2`。
+  但它的**背后本身就是近纯白**（中列顶部白釉渐隐 + 氛围层顶部白光；实测 header 内 `#FEFEFE`，
+  而正下方内容区已经是 `#DDE8F7`）——玻璃没有可透出的底色，奶油白 fill 再叠一层白，只剩一条白板。
+- 几何上它是通栏平贴条：没有外投影、没有圆角，与内容区之间只靠一根 1px 发丝线，
+  所以即使有霜也读不出「一层玻璃浮在氛围上」的层次。
+
+### 10.3 做法（只动 `plugin/src/styles/10-shell.css`）
+
+1. **给玻璃一条能透视的衬底**（§1）：中列顶部原来那道纯白釉渐隐，换成两团淡蓝雾
+   （`radial-gradient` 18% / 82% 位置）+ 极淡白釉。它同时是氛围层的一部分和 header 的 backdrop，
+   header 内采样因此变成 `#E4EEFF / #DFECFF`（比周围 `#EAF2FF` 更蓝、更透）——透明与模糊终于可见。
+2. **header 改成悬浮玻璃条**（§3）：
+   - 外槽 `9px 12px 8px` 内缩 + 本体 `18px` 圆角：四周露出氛围层，和 composer 一样「浮在雾上」；
+   - 填充改用 header 自己的变量：浅色 17% 白、深色 47% `#0d1524`；霜 `blur(24px) saturate(1.65)`；
+   - 三件套全在 `::before`（唯一载体，负 z-index，不产生 fixed 包含块）：
+     顶部 0.72 白镜面 + 0.5px 白釉发丝边 + 底部内侧极淡蓝影（玻璃厚度）；
+   - 本体只画外投影 `0 20px 46px -30px`（浅色蓝调 / 深色黑），与 composer 的 elevation 语言一致；
+   - tab 行、动作按钮、crumb 原有规则全部照旧（仍可点、仍可拖窗），只改了外壳材质与几何。
+3. **深色同构**：`--dsg-header-fill` / `--sweep` / 投影各出一套暗色值，其余规则共用。
+4. **退化与边界**：`max-width: 760px` 收边（8px / 14px 圆角）；`@supports not (backdrop-filter)`
+   与软件光栅化（`[data-dsg-fallback]`）回退到 94% 近不透明，几何不变。
+
+### 10.4 验证
+
+| 场景 | 截图 |
+|---|---|
+| 浅色·对话页顶层（1603×1028，DPR 1.25） | [`assets/final/chat-light-glass-header.png`](assets/final/chat-light-glass-header.png) |
+| 深色·对话页顶层 | [`assets/final/chat-dark-glass-header.png`](assets/final/chat-dark-glass-header.png) |
+| 浅色·header 细部 | [`assets/final/header-glass-light.png`](assets/final/header-glass-light.png) |
+| 深色·header 细部 | [`assets/final/header-glass-dark.png`](assets/final/header-glass-dark.png) |
+
+- 浅/深两套均实机 HMR 验证（深色通过临时改 profile 的 `ui-theme.preference` 截图后已改回 `light`）。
+- tab 选中下划线、hover 底、右侧「打开方式 / 更多 / 侧栏」按钮位置与点击区域不受影响；
+  外层只有 `::before`（`pointer-events: none`）承担霜，不含任何 fixed 后代。
+- 深色采样：header 内比周围背景亮约 6–10/255、蓝通道 +8，读作暗色玻璃；浅色 header 内 `#E4EEFF`、周围 `#EAF2FF`。
+
+> 取舍：这是**有意的几何改动**（通栏平贴条 → 内缩悬浮条），因为「像输入框」的核心就是
+> 「一块独立、有厚度、浮在氛围上的玻璃」。若后续想回到通栏，只需去掉 §3 外槽 padding 与圆角，
+> 保留 §1 的衬光和 §3 的填充/投影即可。
+
