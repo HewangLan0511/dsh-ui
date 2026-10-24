@@ -112,3 +112,44 @@ effAlpha = floor + a · (1 − floor)        floor = 0.45（浅）/ 0.59（深�
 - [`UI-CONTRACT.md`](UI-CONTRACT.md) — 实现契约与硬约束
 - [`OPERATIONS.md`](OPERATIONS.md) — 构建/安装/回滚
  
+---
+
+## 9. 追加修复：Windows 标题栏菜单条 / 窗口控制按钮（2026-10-24 第二轮）
+
+用户反馈顶部 Windows 标题栏（「应用 / 编辑」菜单条 + 最小化/最大化/关闭）与整体风格脱节：
+菜单条区域出现突兀色差、`应用` 左侧缺图标，浅色模式同样存在。
+
+### 根因
+
+- `应用 / 编辑` 不是网页 DOM，而是 DSH Desktop 的 preload 注入的 **Shadow DOM 菜单条**（`div[data-windows-menu]`），
+  窗口控制按钮则是 Electron 的 `titleBarOverlay` 原生控件。
+- preload 用一个隐藏探针 `<span>`（`background-color: var(--dsw-specific-sidebar-fill)`）通过 canvas 取色，
+  经 `windowsAppearance` IPC 调 `setTitleBarOverlay(color, symbolColor)`。
+- 我们把 `--dsw-specific-sidebar-fill` 改成半透明玻璃后，探针取到带 alpha 的颜色；原生 overlay 会把它合成到
+  黑色背衬上 → 深色块。同时 preload 只在少量 mutation 时重测，主题切换后 overlay 常停留在启动时的颜色。
+
+### 修复（`plugin/src/styles/12-windows-titlebar.css` + `client-template.js` 的 `syncDesktopCaption`）
+
+1. **探针改为不透明主题色**（light `#eaf1fb` / dark `#0b1322`）：`setTitleBarOverlay` 收到不透明色，
+   原生按钮区与页面标题栏同色。
+2. **网页侧标题栏用同一实体色** + 轻微顶部釉光 + 0.5px 发丝底边；去掉原生条上的 backdrop-filter，
+   三层（菜单区 / 控件区 / 网页条）不再有色差。
+3. **主动重同步**：插件在启动后 250/700/1500/2800ms 以及主题切换（`data-ds-theme-source` /
+   `data-ds-dark-theme`）后主动触发 preload 的探针重测（改写 body style 的 `--dsg-caption-tick`），
+   确保 overlay 跟随当前主题，而不是启动时的旧值。
+4. **补图标**：从 `@deepseek-ai/dsh-client-ui-primitives` 的 `FISH_LOGO_PATH` 提取官方鲸标，
+   以 CSS mask 渲染在菜单条左侧（light `#4d6bfe` / dark `#7aaaff`），`应用` 左侧不再空缺。
+
+### 验证（像素采样）
+
+| 模式 | 左侧标题栏 | 右侧控件区 | 差值 |
+|---|---|---|---|
+| 浅色 | `rgb(235,242,251)` | `rgb(230,237,247)` | Δ≈5/255（页面釉光导致） |
+| 深色 | `rgb(21,28,43)` | `rgb(14,22,37)` | Δ≈7/255 |
+
+![标题栏·浅色](assets/final/titlebar-light.png)
+
+![标题栏·深色](assets/final/titlebar-dark.png)
+
+> 备注：`titleBarOverlay` 的最终颜色仍由 Desktop 主进程决定；本插件通过“不透明探针 + 主动重测”保证它
+> 与玻璃 UI 同步。若 DSH Desktop 后续更新改了 preload 的探针实现，只需调整 12-windows-titlebar.css 的探针选择器。

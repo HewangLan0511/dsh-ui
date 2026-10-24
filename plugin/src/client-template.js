@@ -223,9 +223,44 @@ window.__ModuleLoader__.load({
       ])
     }
 
+    // Windows caption sync: the desktop preload measures a hidden probe span and
+    // forwards the colours to Electron's titleBarOverlay. It only re-measures on
+    // a few mutations, so nudge it after our stylesheet/theme settles; without
+    // this the native caption area can keep the launch-time colour and clash
+    // with the glass titlebar in the other scheme.
+    function syncDesktopCaption(ctx) {
+      try {
+        if (typeof document === 'undefined' || !document.body) return
+        var body = document.body
+        var tick = 0
+        function ping() {
+          try { body.style.setProperty('--dsg-caption-tick', String(++tick)) } catch (e) { /* noop */ }
+        }
+        var timers = []
+        ;[250, 700, 1500, 2800].forEach(function (delay) { timers.push(window.setTimeout(ping, delay)) })
+        var observer = new MutationObserver(function () {
+          timers.push(window.setTimeout(ping, 60))
+          timers.push(window.setTimeout(ping, 450))
+        })
+        try {
+          observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-ds-theme-source'] })
+          observer.observe(body, { attributes: true, attributeFilter: ['data-ds-dark-theme'] })
+        } catch (e) { /* noop */ }
+        try {
+          ctx.effect(function () {
+            return function () {
+              observer.disconnect()
+              for (var i = 0; i < timers.length; i++) window.clearTimeout(timers[i])
+            }
+          }, 'dsh-ui-deepseek: windows caption sync')
+        } catch (e) { /* non-fatal */ }
+      } catch (e) { /* non-fatal */ }
+    }
+
     function apply(ctx) {
       ctxRef = ctx
       detectGlassFallback()
+      syncDesktopCaption(ctx)
 
       // 0. first activation: adopt the DeepSeek-web light palette once. Later
       // changes made in DSH's native Appearance settings are left alone.
