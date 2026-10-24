@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Build dsh-ui-deepseek: concatenate src/styles/*.css (sorted) into the client
+// Build dsh-skin-mistblue: concatenate src/styles/*.css (sorted) into the client
 // template and emit plugin/lib/client.js.
 import fs from 'node:fs'
 import path from 'node:path'

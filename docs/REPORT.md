@@ -1,6 +1,6 @@
 # REPORT — DeepSeek 网页端视觉语言在 DSH 上的落地
 
-> 交付日期：2026-10-24 ｜ 基线：`baseline-v0`（施工前快照）｜ 实现：`dsh-ui-deepseek` 插件（已安装到 desktop profile）
+> 交付日期：2026-10-24 ｜ 基线：`baseline-v0`（施工前快照）｜ 实现：`dsh-skin-mistblue` 插件（已安装到 desktop profile）
 
 ## 0. 一句话结论
 
@@ -62,7 +62,7 @@ effAlpha = floor + a · (1 − floor)        floor = 0.45（浅）/ 0.59（深�
 
 ## 4. 实现架构
 
-- 一个可安装的 DSH bundle：`dsh-ui-deepseek`（本地 link 安装到 desktop profile，已生效）。
+- 一个可安装的 DSH bundle：`dsh-skin-mistblue`（本地 link 安装到 desktop profile，已生效）。
 - 无构建期依赖：CSS 源码在 `plugin/src/styles/*.css`，`node tools/build-plugin.mjs` 将其内联进 `plugin/lib/client.js`（内联样式表 + React 设置页）。
 - 运行时：`html[data-dsg="on"]` 注入氛围层；通过 token 覆盖 + 少量稳定选择器（`[data-composer-card]`、`[data-slot="sidebar"]`、`[data-chat-flow]`、`[role="dialog"]`、`data-shortcut-modal=settings` 等）实现，不修改任何 DSH 自带包。
 - 设置页：设置 → 外观 → **外观 · DeepSeek**，可调色彩模式（浅/深/跟随系统）、氛围背景（极光/轻雾/关）、玻璃透明度、模糊强度、动效开关，即时生效并存本机。
@@ -89,7 +89,7 @@ effAlpha = floor + a · (1 − floor)        floor = 0.45（浅）/ 0.59（深�
 ## 6. 回滚
 
 1. **代码级**：`git checkout baseline-v0 -- .`（或切 tag `baseline-v0`）。
-2. **界面级**：在 DSH 插件管理器停用/移除 `dsh-ui-deepseek`，刷新后恢复原生 UI。
+2. **界面级**：在 DSH 插件管理器停用/移除 `dsh-skin-mistblue`，刷新后恢复原生 UI。
 3. **完整恢复**：用 `baseline/profile/` 覆盖 profile 的 `cordis.patch.yml`/`package.json`，用 `baseline/plugins/` 覆盖 liteglass 与 wallpaper-engine 配置，重启 DSH。
 4. 颜色模式在本次改造中一次性切到浅色；如需深色，在 设置 → 外观 改回。
 
@@ -351,6 +351,47 @@ effAlpha = floor + a · (1 − floor)        floor = 0.45（浅）/ 0.59（深�
 - 本轮环境限制：DSH 桌面端当前为**非 development 启动**（菜单里没有「刷新页面」），
   插件 client 的 HMR 通道在最近一次重启后不再推送；因此新 bundle 需要**下一次启动/重载页面**
   才能在界面上看到。`plugin/lib/client.js` 已是最新构建（141.9 KiB）。
+
+---
+
+## 13. 定名与改包名：`dsh-skin-mistblue`（雾蓝，2026-10-24 第七轮，`v1.7-ui`）
+
+用户选定皮肤名 **dsh-skin-mistblue / 雾蓝（Mistblue）**，从原工程名 `dsh-ui-deepseek` 迁移：
+
+### 13.1 改动清单
+
+| 位置 | 改动 |
+|---|---|
+| `plugin/package.json` | `name: dsh-skin-mistblue`，description 改为 Mistblue 皮肤 |
+| `plugin/cordis.patch.yml` | Host 行 `id: mistblue` / `name: dsh-skin-mistblue`（顺带清掉旧文件里的乱码注释） |
+| `plugin/src/client-template.js` | 模块 id、`data-plugin*`、effect 标签、`settings.section` id、设置页标题（「外观 · 雾蓝」/「雾蓝玻璃外观」）全部切换 |
+| `plugin/locale/{zh,en}.json` | title / description 改为雾蓝 / Mistblue |
+| `plugin/lib/index.js` | Host half 注释更新 |
+| profile `desktop` | `plugin_manager` 重新以 link 方式安装 `dsh-skin-mistblue`，移除旧 `dsh-ui-deepseek` |
+| 文档 | README / REPORT / OPERATIONS / UI-CONTRACT / GLASS-SPEC 全量改名；NAMING 记录决策 |
+
+### 13.2 配置迁移（不丢旧设置）
+
+- 新键：`dsh-skin-mistblue/config`、`dsh-skin-mistblue/color`；
+- `readItem(新键, 旧键)`：新键缺失时回退读 `dsh-ui-deepseek/config`、`/color`；
+- 首次保存/切主题后写入新键并删除旧键，避免两份配置漂移。
+
+### 13.3 验证
+
+- `node tools/test-plugin-logic.mjs` 仍 9/9 PASS（改名不影响 guard/i18n 逻辑）；
+- 构建通过，bundle 由 10 个 CSS 文件 + 模板生成；
+- **实时插槽校验**（`cordis_inspect_query` → client `Slots.listSubTree settings.section`）：
+  occupant 已是 `{ id: "dsh-skin-mistblue", order: 60, active: true }`，旧的
+  `dsh-ui-deepseek` 已从 occupant 列表消失 —— 说明新 client 半部已经加载、设置区注册成功。
+- 安装侧：`plugin_manager install_bundle` 返回 `application: applied`；旧 bundle 先从
+  profile 依赖里移除（`pnpm remove dsh-ui-deepseek`）后不再 removable（即已清空），
+  并清掉了残留的 `node_modules/dsh-ui-deepseek` junction（目标仍指向本仓库 `plugin/`）。
+- 设置页入口文案变为「外观 · 雾蓝」，locale 中文标题「雾蓝 · Mistblue」。
+
+> 注意：改名涉及 `package.json` 与 bundle 行，属于 host 侧元数据；如果 DSH 不是
+> development 启动，渲染进程不会自动重载，最坏情况下需要重启一次 DSH 才能看到新设置项名称。
+
+
 
 
 

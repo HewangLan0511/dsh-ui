@@ -1,8 +1,8 @@
 {
-  "name": "dsh-ui-deepseek",
+  "name": "dsh-skin-mistblue",
   "version": "0.1.0",
   "private": true,
-  "description": "DeepSeek-web inspired translucent glass UI for DeepSeek Harness: airy ambient background, liquid-glass surfaces, readability-tiered blur for cards, popups and detail panels.",
+  "description": "Mistblue (雾蓝) — a DeepSeek-web inspired translucent glass skin for DeepSeek Harness: airy ambient background, liquid-glass surfaces, readability-tiered blur for cards, popups and detail panels.",
   "type": "module",
   "exports": {
     ".": "./lib/index.js",

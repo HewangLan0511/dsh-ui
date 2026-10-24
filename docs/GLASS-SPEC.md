@@ -4,7 +4,7 @@
 > 输入：`dsh-plugin-wallpaper-engine@1.3.x` 源码（`lib/client.js`，4.5 MB，内联了 9 个样式域模块与全部 JS）、
 > `lib/settings-schema.js`、`lib/glass-presets/*.json`、`README.md`、`baseline/plugins/wallpaper-engine.config.json`、
 > `baseline/ui-theme/`（DSH 主题 token 与 WE 已提取样式表）、`baseline/reference/deepseek-web.png`、`baseline/screenshots/current-ui.png`。
-> 目标读者：`dsh-ui-deepseek` 插件（新玻璃引擎）的实现者。文中所有数值都可在源码中复核，定位见 **附录 A**。
+> 目标读者：`dsh-skin-mistblue` 插件（新玻璃引擎）的实现者。文中所有数值都可在源码中复核，定位见 **附录 A**。
 
 ---
 

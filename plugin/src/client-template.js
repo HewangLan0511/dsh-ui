@@ -1,8 +1,8 @@
-// dsh-ui-deepseek — browser half.
+// dsh-skin-mistblue (雾蓝) — browser half.
 // GENERATED FILE: edit src/client-template.js and src/styles/*.css, then run
 // `node tools/build-plugin.mjs`. The build inlines the CSS bundle into `CSS`.
 window.__ModuleLoader__.load({
-  id: 'dsh-ui-deepseek',
+  id: 'dsh-skin-mistblue',
   factory: function (require) {
     var module = { exports: {} }
     var exports = module.exports
@@ -13,8 +13,11 @@ window.__ModuleLoader__.load({
 
     var CSS = __DSG_CSS__
 
-    var STORAGE_KEY = 'dsh-ui-deepseek/config'
-    var COLOR_KEY = 'dsh-ui-deepseek/color'
+    // 旧包名（v1.0–v1.6）的配置键：读新键失败时回退到旧键，避免改名丢设置。
+    var STORAGE_KEY = 'dsh-skin-mistblue/config'
+    var COLOR_KEY = 'dsh-skin-mistblue/color'
+    var LEGACY_STORAGE_KEY = 'dsh-ui-deepseek/config'
+    var LEGACY_COLOR_KEY = 'dsh-ui-deepseek/color'
     var DEFAULTS = {
       glass: 1,        // 0..1 surface opacity multiplier (1 = theme default)
       blur: 1,         // 0..1 blur radius multiplier
@@ -55,14 +58,25 @@ window.__ModuleLoader__.load({
       c.motion = src.motion === undefined ? DEFAULTS.motion : !!src.motion
       return c
     }
+    function readItem(key, legacyKey) {
+      try {
+        var v = window.localStorage.getItem(key)
+        if (v !== null && v !== undefined) return v
+        return legacyKey ? window.localStorage.getItem(legacyKey) : null
+      } catch (e) { return null }
+    }
     function load() {
       try {
-        var raw = window.localStorage.getItem(STORAGE_KEY)
+        var raw = readItem(STORAGE_KEY, LEGACY_STORAGE_KEY)
         return normalize(raw ? JSON.parse(raw) : null)
       } catch (e) { return normalize(null) }
     }
     function save(c) {
-      try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(c)) } catch (e) { /* non-fatal */ }
+      try {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(c))
+        // 迁移完成：旧键只读不写，清掉避免长期两份配置
+        window.localStorage.removeItem(LEGACY_STORAGE_KEY)
+      } catch (e) { /* non-fatal */ }
     }
 
     function applyAtmosphere(c) {
@@ -135,7 +149,10 @@ window.__ModuleLoader__.load({
       var theme = themeService(ctx)
       if (!theme || !theme.setTheme) return
       try { theme.setTheme(id) } catch (e) { /* non-fatal */ }
-      try { window.localStorage.setItem(COLOR_KEY, id) } catch (e) { /* non-fatal */ }
+      try {
+        window.localStorage.setItem(COLOR_KEY, id)
+        window.localStorage.removeItem(LEGACY_COLOR_KEY)
+      } catch (e) { /* non-fatal */ }
       emit()
     }
 
@@ -204,7 +221,7 @@ window.__ModuleLoader__.load({
       }, [])
       return h('div', { className: 'dsg-settings' }, [
         h('div', { className: 'dsg-settings-head', key: 'head' }, [
-          h('div', { className: 'dsg-settings-title', key: 't' }, T('DeepSeek 玻璃外观', 'DeepSeek glass appearance')),
+          h('div', { className: 'dsg-settings-title', key: 't' }, T('雾蓝玻璃外观', 'Mistblue glass appearance')),
           h('div', { className: 'dsg-settings-sub', key: 's' }, T('透明氛围背景 + 分级液态玻璃；设置即时生效并保存在本机。', 'Ambient translucent background with tiered liquid glass. Changes apply instantly and persist on this device.'))
         ]),
         h('div', { className: 'dsg-settings-body', key: 'body' }, [
@@ -269,7 +286,7 @@ window.__ModuleLoader__.load({
               observer.disconnect()
               for (var i = 0; i < timers.length; i++) window.clearTimeout(timers[i])
             }
-          }, 'dsh-ui-deepseek: windows caption sync')
+          }, 'dsh-skin-mistblue: windows caption sync')
         } catch (e) { /* non-fatal */ }
       } catch (e) { /* non-fatal */ }
     }
@@ -332,7 +349,7 @@ window.__ModuleLoader__.load({
             document.removeEventListener('pointerdown', onDown, true)
             window.__dsgResizeGuard = false
           }
-        }, 'dsh-ui-deepseek: resize guard')
+        }, 'dsh-skin-mistblue: resize guard')
       } catch (e) { /* non-fatal */ }
     }
 
@@ -350,13 +367,13 @@ window.__ModuleLoader__.load({
           return function () {
             try { if (ctx.off) ctx.off('locale/change', handler) } catch (e) { /* non-fatal */ }
           }
-        }, 'dsh-ui-deepseek: locale labels')
+        }, 'dsh-skin-mistblue: locale labels')
       } catch (e) { /* non-fatal */ }
 
       // 0. first activation: adopt the DeepSeek-web light palette once. Later
       // changes made in DSH's native Appearance settings are left alone.
       try {
-        var stored = window.localStorage.getItem(COLOR_KEY)
+        var stored = readItem(COLOR_KEY, LEGACY_COLOR_KEY)
         if (!stored) setColor(ctx, 'light')
       } catch (e) { /* non-fatal */ }
 
@@ -364,12 +381,12 @@ window.__ModuleLoader__.load({
       try {
         ctx.effect(function () {
           var tag = document.createElement('style')
-          tag.setAttribute('data-plugin', 'dsh-ui-deepseek')
-          tag.setAttribute('data-plugin-css', 'dsh-ui-deepseek/glass')
+          tag.setAttribute('data-plugin', 'dsh-skin-mistblue')
+          tag.setAttribute('data-plugin-css', 'dsh-skin-mistblue/glass')
           tag.textContent = CSS
           document.head.appendChild(tag)
           return function () { tag.remove() }
-        }, 'dsh-ui-deepseek: stylesheet')
+        }, 'dsh-skin-mistblue: stylesheet')
       } catch (e) { /* non-fatal */ }
 
       // 2. atmosphere layer + root attributes
@@ -386,7 +403,7 @@ window.__ModuleLoader__.load({
             html.style.removeProperty('--dsg-blur')
             html.style.removeProperty('--dsg-motion')
           }
-        }, 'dsh-ui-deepseek: atmosphere')
+        }, 'dsh-skin-mistblue: atmosphere')
       } catch (e) { /* non-fatal */ }
 
       // 3. settings page section
@@ -395,7 +412,7 @@ window.__ModuleLoader__.load({
         try {
           slots.inject('settings.section', function () {
             return slots.register(
-              { name: 'settings.section', id: 'dsh-ui-deepseek', order: 60, label: T('外观 · DeepSeek', 'Appearance · DeepSeek') },
+              { name: 'settings.section', id: 'dsh-skin-mistblue', order: 60, label: T('外观 · 雾蓝', 'Appearance · Mistblue') },
               function () { return h(SettingsPanel, {}) }
             )
           })

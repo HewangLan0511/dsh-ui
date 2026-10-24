@@ -1,7 +1,7 @@
 # OPERATIONS — 安装 / 更新 / 回滚
 
 当前 profile：`desktop`（`C:\Users\baiyu\.dsh\profiles\desktop`）。
-插件已通过 `plugin_manager install_bundle` 以本地 link 方式安装：`dsh-ui-deepseek` → 本仓库 `plugin/`。
+插件已通过 `plugin_manager install_bundle` 以本地 link 方式安装：`dsh-skin-mistblue` → 本仓库 `plugin/`。
 
 ## 构建
 
@@ -22,7 +22,9 @@ node tools/build-plugin.mjs
 # plugin_manager install_bundle { target: "C:\Users\baiyu\Desktop\dsh-ui\plugin" }
 ```
 - 本插件是本地 link，构建产物变化走 HMR；**修改 host half（lib/index.js）或 package.json 需要重启 DSH**。
-- 插件入口：设置 → 外观 · DeepSeek（`settings.section`，id `dsh-ui-deepseek`）。
+- 插件入口：设置 → 外观 · 雾蓝（`settings.section`，id `dsh-skin-mistblue`）。
+- 改名前（`dsh-ui-deepseek`，v1.6 及以前）需要先从 profile 移除旧 bundle；
+  v1.7 起新名字已通过 `plugin_manager` 重装，旧依赖/bundle 行已清理。
 
 ## 截图验证
 
@@ -40,8 +42,8 @@ node tools/build-plugin.mjs
    ```
 2. **完全回滚界面**（移除插件 bundle）：
    ```powershell
-   # 在 DSH 插件管理器中停用/移除 dsh-ui-deepseek；或
-   # plugin_manager remove_bundle { target: "dsh-ui-deepseek" }
+   # 在 DSH 插件管理器中停用/移除 dsh-skin-mistblue；或
+   # plugin_manager remove_bundle { target: "dsh-skin-mistblue" }
    ```
    移除后页面回到基线视觉（颜色模式可能仍为您切换的浅色；可在 设置 → 外观 改回）。
 3. **恢复 profile 原始组合**：用 `baseline/profile/cordis.patch.yml` 与 `baseline/profile/package.json` 覆盖 `C:\Users\baiyu\.dsh\profiles\desktop\` 下同名文件（先备份），重启 DSH。

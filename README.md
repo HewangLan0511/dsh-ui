@@ -3,7 +3,8 @@
 以 DeepSeek 网页端（deepseek.com）的视觉语言为基准，重构 DSH（DeepSeek Harness）桌面/Web GUI 的界面与交互：
 整体透明、浅色空气感、大留白、柔光玻璃，弹窗/显示卡/详情卡按可读性分级加雾（backdrop blur）。
 
-**状态：已交付。** 插件 `dsh-ui-deepseek` 已安装并在 desktop profile 生效。
+**状态：已交付。** 插件 **`dsh-skin-mistblue`（雾蓝）** 已安装并在 desktop profile 生效
+（v1.6 及以前名为 `dsh-ui-deepseek`；v1.7 起改名，localStorage 有迁移，旧设置不丢）。
 完整交付报告：[`docs/REPORT.md`](docs/REPORT.md)
 
 ## 仓库结构
@@ -17,7 +18,7 @@ baseline/            施工前快照（可回滚点）
   reference/         DeepSeek 网页端参考图
 docs/                设计规格、玻璃引擎规格、DSH 页面/选择器清单、最终决策、报告
   assets/final/      最终效果截图（hero / chat light+dark / settings / trajectory）
-plugin/              插件 dsh-ui-deepseek（本项目主要产物）
+plugin/              插件 dsh-skin-mistblue（雾蓝，本项目主要产物）
   src/styles/        00 基础+玻璃引擎 · 10 壳层 · 20 左栏 · 30 输入区 · 35 Hero · 40 内容 · 50 浮层 · 60 设置 · 95 插件设置页
   lib/client.js      构建产物（内联 CSS + React 设置页）
 tools/               构建 / 截图 / 提取 / 归档脚本
@@ -73,6 +74,7 @@ git checkout baseline-v0 -- .
 - [x] 对话页顶层 header 悬浮玻璃条（v1.4-ui）
 - [x] 右侧边栏玻璃化：文件浏览器 / 上下文洞察共享对话背景（v1.5-ui）
 - [x] 拖动分栏性能优化（resize guard）+ 设置页中文（v1.6-ui）
+- [x] 改名 `dsh-skin-mistblue`（雾蓝），旧配置迁移（v1.7-ui）
 - [ ] 可选后续：菜单/审批卡/右栏文档预览的人工视觉复核；壁纸共存回归；生成式云雾背景
 
 ## 2026-10-24 追加修复：Windows 标题栏
@@ -104,12 +106,22 @@ git checkout baseline-v0 -- .
 ## 2026-10-24 追加：拖动分栏性能 + 设置页中文
 
 - **拖动卡顿**：拖动左右分栏时每帧重排，几十个 `backdrop-filter` 玻璃面（尤其逐个挂霜的消息气泡）
-  每帧重采样 backdrop，是掉帧主因。now client 在指针拖动 >4px 时给 `<html>` 打
+  每帧重采样 backdrop，是掉帧主因。现在 client 在指针拖动 >4px 时给 `<html>` 打
   `data-dsg-resizing`，CSS 只在拖动期间卸掉霜与超大外投影（背后是平滑氛围层，观感几乎无差），
   松手立即恢复，静止/拖动结束外观不变。
 - **设置页中文**：语言检测从「模块加载时缓存」改为每次读取 DSH `locale` 服务 / `<html lang>` /
   `navigator.language`，未知时默认中文，并订阅 `locale/change` 即时重渲染。
 - 单元测试 `node tools/test-plugin-logic.mjs` 覆盖 drag guard 与 i18n 选择；
   原理见 [`docs/REPORT.md`](docs/REPORT.md) 第 12 节。
-- 皮肤命名建议见 [`docs/NAMING.md`](docs/NAMING.md)（首选「澜镜 / Lan Mirror」）。
 - 新增交付标签：`v1.6-ui`。
+
+## 2026-10-24 追加：改名为 `dsh-skin-mistblue`（雾蓝）
+
+- 插件正式定名 **dsh-skin-mistblue / 雾蓝（Mistblue）**：包名、bundle patch、模块 id、
+  设置页标题（「外观 · 雾蓝」）、locale 文案全部切换；
+- localStorage 键改为 `dsh-skin-mistblue/*`，并保留对旧键 `dsh-ui-deepseek/*` 的一次性读取迁移，
+  旧配置/配色不会丢；
+- 命名候选与取舍记录在 [`docs/NAMING.md`](docs/NAMING.md)；
+- 安装：desktop profile 通过 `plugin_manager` 以 link 方式重装为
+  `dsh-skin-mistblue` → 本仓库 `plugin/`。
+- 新增交付标签：`v1.7-ui`。

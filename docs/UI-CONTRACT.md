@@ -1,6 +1,6 @@
 # UI-CONTRACT — 实现契约（Lead 维护，实现者必读）
 
-本文件定义 `dsh-ui-deepseek` 插件的实现边界、玻璃变量、文件所有权与验收方式。
+本文件定义 `dsh-skin-mistblue` 插件的实现边界、玻璃变量、文件所有权与验收方式。
 规格依据：`docs/DESIGN-SPEC.md`、`docs/GLASS-SPEC.md`、实时 DOM 快照 `.ref/dom/surface-tree.txt`。
 
 ## 1. 文件所有权（并行开发，禁止跨界写）
