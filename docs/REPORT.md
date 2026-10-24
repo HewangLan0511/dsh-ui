@@ -502,13 +502,15 @@ node tools/release.mjs
 ```
 
 `dist/` 已加入 `.gitignore`；发布到 npm 与 GitHub Release 的步骤见 `docs/RELEASE.md`。
-本机 npm 未登录、没有 `gh`/SSH key、仓库无 remote，因此**最后两步上传需要账号侧操作**，
-其余（版本号、许可证、包内容、构建产物）已就绪。
+GitHub 侧已经完成：仓库 `HewangLan0511/dsh-ui`（私有）已推送 main + 全部 tag，
+Release `v1.0.0` 三个附件（tgz / src zip / SHA256SUMS）已上传。
+npm 侧仍需本机执行 `npm login` 后 `npm publish`（npm 账号未登录）。
 
 ### 16.3 版本与标签
 
 - npm / 插件版本：`1.0.0`；
-- git tag：`v1.0.0`（发布提交），历史界面里程碑 `v1.0-ui` … `v1.11-ui` 全部保留；
+- git tag：`v1.0.0`（发布提交），历史界面里程碑 `v1.0-ui` … `v1.12-ui` 全部保留并已推送；
+- GitHub Release：`https://github.com/HewangLan0511/dsh-ui/releases/tag/v1.0.0`；
 - profile 内 bundle 同步升级为 `1.0.0`（`plugin_manager install_bundle`），设置页入口不变。
 
 ---

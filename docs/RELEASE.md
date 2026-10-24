@@ -48,28 +48,23 @@ npm publish --access public
   ```
 - 24 小时内可撤：`npm unpublish dsh-skin-mistblue@1.0.0 --force`（不推荐，撤包会影响已安装用户）。
 
-## 2. 上传 GitHub
+## 2. 上传 GitHub（已完成 · 2026-10-24）
 
-仓库已建好（私有）：`https://github.com/HewangLan0511/dsh-ui`。
-`plugin/package.json` 的 `repository` / `homepage` / `bugs` 已指向它；本地 remote 与推送：
+- 仓库：`https://github.com/HewangLan0511/dsh-ui`（**私有**，可一键改公开）；
+- `main` 与全部 tag（`v1.0.0`、`v1.0-ui` … `v1.12-ui`、`baseline-v0`）已推送；
+- Release：`https://github.com/HewangLan0511/dsh-ui/releases/tag/v1.0.0`
+  （附件 `dsh-skin-mistblue-1.0.0.tgz` / `-src.zip` / `SHA256SUMS.txt` 已上传）；
+- `plugin/package.json` 的 `repository` / `homepage` / `bugs` 已指向该仓库。
 
 ```powershell
+# 之后本地改动再推送
 cd C:\Users\baiyu\Desktop\dsh-ui
-git remote add origin https://github.com/HewangLan0511/dsh-ui.git
-git push -u origin main
+git push origin main
 git push --tags
 ```
 
 > 想公开仓库时：GitHub → Settings → General → Danger Zone → Change visibility → Public。
 > 公开前请留意 `baseline/` 里有本机 profile 快照与界面截图。
-
-推送后创建 Release（也可用 API / `gh release create`）：
-
-1. GitHub → Releases → Draft a new release → tag `v1.0.0`；
-2. 标题：`dsh-skin-mistblue 1.0.0 — 雾蓝玻璃皮肤`；
-3. 正文直接复制 `CHANGELOG.md` 的 `1.0.0` 段；
-4. 上传附件：`dist/dsh-skin-mistblue-1.0.0.tgz`、`dist/dsh-skin-mistblue-1.0.0-src.zip`、
-   `dist/SHA256SUMS.txt`。
 
 > `repository` 字段已写入包内；`npm publish` 后 npm 页面会显示源码链接。
 
