@@ -43,12 +43,17 @@ npm publish --access public
 - 未 scoped 的包默认 public，`--access public` 只是显式声明；
 - 当前账号 `baiyu0511` 的登录态在发布时被 npm 拒绝：
   `403 ... Two-factor authentication or granular access token with bypass 2fa enabled is required`。
-  两条路：
-  1. **交互发布**：在自己的终端执行 `npm publish --access public`，按提示输入 2FA 一次性密码；
-  2. **Bypass 2FA 令牌**：npmjs.com → Access Tokens → Generate New Token → Granular，
-     权限 Read and write、包范围 `dsh-skin-mistblue`，勾选 **Bypass 2FA**；
-     然后 `npm config set //registry.npmjs.org/:_authToken <token>`（写入本机 ~/.npmrc），
-     之后 `npm publish` 即可非交互完成。
+  诊断：`npm whoami` 正常、`npm token create` 需要交互密码、带假 OTP 的 publish 仍是同一个 403
+  —— 说明 **web 登录落下的 token 没有发布权限**（不是 OTP 问题）。两条路：
+  1. **换 token（推荐，可非交互）**：npmjs.com → 头像 → Access Tokens →
+     Generate New Token：
+     - Classic Token → **Automation**（最简单），或
+     - Granular Token → Permissions **Read and write**、Packages 选中 `dsh-skin-mistblue`、
+       需要时勾 **Bypass 2FA**；
+     然后本机执行 `npm config set //registry.npmjs.org/:_authToken <token>`（写入 `~/.npmrc`），
+     再 `npm publish --access public`。
+  2. **启用 2FA 后带 OTP 发布**：account settings 打开 two-factor，之后
+     `npm publish --access public --otp=<当前 6 位码>`。
 - 发布后验证：
   ```powershell
   npm view dsh-skin-mistblue version dist.tarball
