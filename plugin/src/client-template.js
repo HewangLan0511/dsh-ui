@@ -14,6 +14,7 @@ window.__ModuleLoader__.load({
     var CSS = __DSG_CSS__
 
     var STORAGE_KEY = 'dsh-ui-deepseek/config'
+    var COLOR_KEY = 'dsh-ui-deepseek/color'
     var DEFAULTS = {
       glass: 1,        // 0..1 surface opacity multiplier (1 = theme default)
       blur: 1,         // 0..1 blur radius multiplier
@@ -26,6 +27,7 @@ window.__ModuleLoader__.load({
       bgEl: null,
       rootAttrSet: false
     }
+    var ctxRef = null
     var listeners = []
     function emit() {
       for (var i = 0; i < listeners.length; i++) {
@@ -88,7 +90,6 @@ window.__ModuleLoader__.load({
     function applyVars(c) {
       if (typeof document === 'undefined') return
       var root = document.documentElement
-      // 0..1 multipliers consumed by the stylesheet (calc() based).
       root.style.setProperty('--dsg-glass', String(c.glass))
       root.style.setProperty('--dsg-blur', String(c.blur))
       root.style.setProperty('--dsg-motion', c.motion ? '1' : '0')
@@ -97,6 +98,26 @@ window.__ModuleLoader__.load({
     function applyConfig(c) {
       applyAtmosphere(c)
       applyVars(c)
+    }
+
+    // Color mode is owned by DSH's native theme service; this plugin only
+    // selects a mode on first activation (the reference look is the airy light
+    // palette) and then mirrors whatever the native Appearance setting says.
+    function themeService(ctx) {
+      try { return ctx.get('theme') } catch (e) { return null }
+    }
+    function currentColor(theme) {
+      try {
+        var snap = theme && theme.getTheme && theme.getTheme()
+        return snap && snap.id ? snap.id : 'light'
+      } catch (e) { return 'light' }
+    }
+    function setColor(ctx, id) {
+      var theme = themeService(ctx)
+      if (!theme || !theme.setTheme) return
+      try { theme.setTheme(id) } catch (e) { /* non-fatal */ }
+      try { window.localStorage.setItem(COLOR_KEY, id) } catch (e) { /* non-fatal */ }
+      emit()
     }
 
     function commit(next, persist) {
@@ -151,6 +172,16 @@ window.__ModuleLoader__.load({
           h('div', { className: 'dsg-settings-sub', key: 's' }, T('透明氛围背景 + 分级液态玻璃；设置即时生效并保存在本机。', 'Ambient translucent background with tiered liquid glass. Changes apply instantly and persist on this device.'))
         ]),
         h('div', { className: 'dsg-settings-body', key: 'body' }, [
+          h(Row, { key: 'color', label: T('配色', 'Color mode'), hint: T('浅色为 DeepSeek 网页端基准；深色为同构夜航玻璃', 'Light matches the DeepSeek web reference; dark is the same glass at night') }, h('div', { className: 'dsg-seg' }, ['light', 'dark', 'system'].map(function (v) {
+            var theme = ctxRef ? themeService(ctxRef) : null
+            var active = (theme && currentColor(theme) === v)
+            return h('button', {
+              key: v,
+              type: 'button',
+              className: 'dsg-seg-btn' + (active ? ' is-on' : ''),
+              onClick: function () { setColor(ctxRef, v) }
+            }, v === 'light' ? T('浅色', 'Light') : v === 'dark' ? T('深色', 'Dark') : T('跟随系统', 'System'))
+          }))),
           h(Row, { key: 'atmo', label: T('氛围背景', 'Ambient background'), hint: T('极光云雾 / 轻雾 / 关闭（露出壁纸或纯色）', 'Aurora mist / soft mist / off') }, h('div', { className: 'dsg-seg' }, ['aurora', 'mist', 'off'].map(function (v) {
             return h('button', {
               key: v,
@@ -173,7 +204,114 @@ window.__ModuleLoader__.load({
       ])
     }
 
+    // ---- dev-only DOM snapshot (removed before delivery) --------------------
+    // Writes a JSON snapshot of the live shell to the clipboard once per
+    // DUMP_VERSION so the build loop can inspect real DOM classes/attributes.
+    var DUMP_VERSION = 'v4'
+    function dumpDom() {
+      try {
+        if (window.sessionStorage.getItem('dsg-dom-dump') === DUMP_VERSION) return
+        window.sessionStorage.setItem('dsg-dom-dump', DUMP_VERSION)
+      } catch (e) { return }
+      window.setTimeout(function () {
+        try {
+          var SKIP = { STYLE: 1, SCRIPT: 1, LINK: 1, META: 1, TEMPLATE: 1 }
+          var nodes = 0
+          function walk(el, depth) {
+            if (nodes > 9000) return null
+            var tag = el.tagName
+            if (SKIP[tag]) return null
+            if (tag === 'svg' || el.namespaceURI === 'http://www.w3.org/2000/svg') {
+              return { t: 'svg', c: String(el.getAttribute('class') || '').slice(0, 120) }
+            }
+            nodes++
+            var out = { t: tag.toLowerCase() }
+            if (el.className && typeof el.className === 'string') out.c = el.className.slice(0, 240)
+            var attrs = {}
+            for (var i = 0; i < el.attributes.length; i++) {
+              var a = el.attributes[i]
+              if (a.name === 'class' || a.name === 'style') continue
+              if (a.name.indexOf('aria-') === 0 || a.name === 'role' || a.name === 'title' || a.name === 'type' || a.name.indexOf('data-') === 0) {
+                attrs[a.name] = String(a.value).slice(0, 160)
+              }
+            }
+            if (Object.keys(attrs).length) out.a = attrs
+            var txt = ''
+            for (var j = 0; j < el.childNodes.length; j++) {
+              var n = el.childNodes[j]
+              if (n.nodeType === 3) txt += n.textContent
+            }
+            txt = txt.replace(/\s+/g, ' ').trim()
+            if (txt) out.x = txt.slice(0, 160)
+            if (depth < 40) {
+              var kids = []
+              for (var k = 0; k < el.children.length; k++) {
+                var child = walk(el.children[k], depth + 1)
+                if (child) kids.push(child)
+              }
+              if (kids.length) out.ch = kids
+            }
+            return out
+          }
+          function styles(sel) {
+            var el = document.querySelector(sel)
+            if (!el) return null
+            var cs = getComputedStyle(el)
+            return {
+              background: cs.backgroundColor, image: (cs.backgroundImage || '').slice(0, 120),
+              backdrop: cs.backdropFilter, radius: cs.borderRadius, border: cs.borderColor + ' ' + cs.borderWidth,
+              shadow: (cs.boxShadow || '').slice(0, 200), color: cs.color, font: cs.fontSize + '/' + cs.fontWeight,
+              padding: cs.padding, overflow: cs.overflow, position: cs.position
+            }
+          }
+          var selectors = [
+            'html', 'body', '.BynINW_frame', '.BynINW_sidebarCol', '.BynINW_centerCol', '.BynINW_rightbarCol',
+            '[data-slot="sidebar"]', '[data-conversation-region="chat"]', '[data-conversation-region="composer"]',
+            '[data-chat-flow]', '[class*="_header"]', '[class*="_tabs"]', '[class*="_bubble"]',
+            '[data-composer-seat]', '[data-composer-card]', '[class*="_card"]', '[class*="_row"]',
+            '[class*="_panel"]', '[class*="_pill"]', '[class*="_overlay"]'
+          ]
+          var body = document.body
+          var computed = {}
+          selectors.forEach(function (s) { computed[s] = styles(s) })
+          var payload = {
+            url: location.href,
+            title: document.title,
+            dark: body.hasAttribute('data-ds-dark-theme'),
+            dsg: document.documentElement.getAttribute('data-dsg'),
+            tree: walk(body, 0),
+            probes: selectors.map(function (sel) {
+              var els = document.querySelectorAll(sel)
+              return { sel: sel, count: els.length }
+            }),
+            computed: computed
+          }
+          var text = JSON.stringify(payload)
+          var ta = document.createElement('textarea')
+          ta.value = text
+          ta.setAttribute('readonly', '')
+          ta.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0'
+          document.body.appendChild(ta)
+          ta.select()
+          var ok = false
+          try { ok = document.execCommand('copy') } catch (e) { ok = false }
+          ta.remove()
+          if (!ok && navigator.clipboard) navigator.clipboard.writeText(text)
+        } catch (e) { /* dev-only */ }
+      }, 4000)
+    }
+
     function apply(ctx) {
+      ctxRef = ctx
+      dumpDom()
+
+      // 0. first activation: adopt the DeepSeek-web light palette once. Later
+      // changes made in DSH's native Appearance settings are left alone.
+      try {
+        var stored = window.localStorage.getItem(COLOR_KEY)
+        if (!stored) setColor(ctx, 'light')
+      } catch (e) { /* non-fatal */ }
+
       // 1. global stylesheet, owned by this plugin (removed on unload/HMR)
       try {
         ctx.effect(function () {

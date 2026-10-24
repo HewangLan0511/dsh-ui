@@ -1,0 +1,1 @@
+﻿copy(JSON.stringify({title:document.title, dark:document.body.hasAttribute('data-ds-dark-theme'), dsg:document.documentElement.getAttribute('data-dsg'), slots:[...document.querySelectorAll('[data-slot]')].slice(0,40).map(e=>e.getAttribute('data-slot'))}))
