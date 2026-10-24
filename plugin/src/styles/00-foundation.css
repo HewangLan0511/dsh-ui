@@ -391,3 +391,48 @@ html[data-dsg='on'] body[data-ds-dark-theme][data-dsg-fallback] {
     --dsw-menu-surface-fill: #0f1728;
   }
 }
+
+/* ---- resize guard：拖动分栏时卸掉高成本材质 ---------------------------------
+   client 半部在 pointerdown（cursor 为 *-resize 的手柄）时给 <html> 打
+   data-dsg-resizing，松手立即移除。拖动期间每帧都会重排/重绘：
+   · 任何 backdrop-filter 都会让 Chromium 重新采样整块背景 → 卡顿主因；
+   · 沿移动边缘的超大外投影会逐帧重新栅格化。
+   这些玻璃背后的衬底是平滑的氛围层，去掉霜与远投影在拖动过程中几乎看不出；
+   静止态（含松手后的每一帧）与原来完全一致，不改变最终观感。 */
+html[data-dsg='on'][data-dsg-resizing] :is(
+    [class*='_bubble']:not([role='tooltip']),
+    [data-turn-trigger]
+  ) {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  /* 只保留内侧顶光/发丝边，去掉逐帧重栅格化的 44px 外投影 */
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.22) !important;
+}
+html[data-dsg='on'][data-dsg-resizing] body[data-ds-dark-theme] :is(
+    [class*='_bubble']:not([role='tooltip']),
+    [data-turn-trigger]
+  ) {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.1) !important;
+}
+html[data-dsg='on'][data-dsg-resizing] :is(
+    [data-composer-card],
+    [data-goal-bar] [class*='_bar'],
+    [data-sidebar-right-panel]:not([aria-hidden='true']),
+    [data-slot='conversation.header'] > header,
+    div:has(> [data-slot='sidebar'])
+  )::before {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+/* 侧栏/header 的外投影在拖动时收紧（移动边缘的大半径阴影最贵） */
+html[data-dsg='on'][data-dsg-resizing] [data-sidebar-right-panel] {
+  box-shadow: -6px 0 16px rgba(44, 74, 140, 0.07) !important;
+}
+html[data-dsg='on'][data-dsg-resizing] [data-slot='conversation.header'] > header {
+  box-shadow: 0 8px 20px -18px rgba(44, 74, 140, 0.4) !important;
+}

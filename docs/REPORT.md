@@ -296,4 +296,61 @@ effAlpha = floor + a · (1 − floor)        floor = 0.45（浅）/ 0.59（深�
 > 注意：右栏的「打开某文件后的文档/代码预览」按设计仍是实底纸面（§5），
 > 那是阅读面，不跟随玻璃化；只有面板外壳、tab 条、列表与统计卡走玻璃。
 
+---
+
+## 12. 拖拽分栏卡顿优化 + 设置页中文（2026-10-24 第六轮，仓库标签 `v1.6-ui`）
+
+### 12.1 现象与根因
+
+用户拖动左右分栏边界改变宽度时明显卡顿。根因是**每帧重排 × 大面积 backdrop-filter**：
+
+- 拖动期间宿主每帧改列宽 → 对话内容（气泡、turn trigger）、左栏、右栏、header、composer
+  全部参与重排/重绘；
+- 本插件让这些面都吃 `backdrop-filter`（气泡甚至逐个挂霜）。Chromium 对每个
+  `backdrop-filter` 表面都要**重新采样 backdrop 再做模糊**，一帧里几十个面同时重算，
+  合成器直接掉帧；
+- 侧栏/header 还有沿移动边缘的 44px 级外投影，每帧重新栅格化。
+
+### 12.2 做法：拖动期间降级为「平价材质」
+
+1. **client 半部新增 resize guard**（`plugin/src/client-template.js`）：
+   - `pointerdown` 后等到指针位移 > ~4px 才判定为「拖动」（点击不触发），
+     给 `<html>` 打 `data-dsg-resizing`；`pointerup / pointercancel / blur / 15s 安全超时`
+     立刻移除。
+   - 不依赖具体手柄选择器，因此左栏边界、dockkit divider、任何布局拖动都覆盖。
+2. **样式半部只在这一状态下卸成本**（`plugin/src/styles/00-foundation.css`）：
+   - 气泡 / turn trigger：`backdrop-filter: none`，同时去掉 44px 外投影、保留内侧顶光与发丝边；
+   - composer、goal bar、右栏、会话 header、左栏的 `::before`：`backdrop-filter: none`；
+   - 侧栏/header 外投影收紧到 16–20px。
+3. **为什么不算视觉退化**：这些玻璃的 backdrop 都是平滑的氛围层（固定渐变 + 极淡网格），
+   有霜/无霜在拖动的那几百毫秒里几乎无差；**松手后的每一帧与原来完全一致**，
+   静态截图与拖动结束后外观不变（只影响拖动过程）。
+
+### 12.3 设置页改中文
+
+- 根因：`T(zh, en)` 在**模块加载时**就把语言缓存成常量，而本插件以 `immediately: true` 加载，
+  经常早于 DSH locale 服务把 `<html lang>` 同步成 `zh-CN`；此时只能退到
+  `navigator.language`（Electron 常为 en-US），于是设置行显示英文，而导航标题却是中文。
+- 修法：`currentLanguage()` 改为**每次求值**：优先读 DSH `locale` 服务的
+  `getSnapshot().active`，其次 `<html lang>`，再次 `navigator.language`，最后默认 `zh`；
+  `T()` 不再缓存。同时订阅 `locale/change`，语言切换后设置页立即重渲染。
+- 效果：DSH 界面是中文时，插件设置区（标题/配色/氛围背景/玻璃透明度/模糊强度/动效/恢复默认）
+  全部中文；切到 English 时自动跟随为英文。
+
+### 12.4 验证方式
+
+- 新增 `tools/test-plugin-logic.mjs`（`node tools/test-plugin-logic.mjs`）：
+  从源码中原样切片 `initResizeGuard / currentLanguage / isZh / T`，
+  用 mock DOM 断言：
+  - 点击（位移 <4px）不触发、拖动触发、松手清除、disposer 清干净；
+  - `lang=zh-CN → 中文`、`lang=en → English`、locale 服务 `zh → 中文`（即使 navigator 是 en）、无信号默认中文。
+  全部 PASS。
+- 选择器侧的 `[data-dsg-resizing]` 规则只作用于现有稳定 hook
+  （`[class*='_bubble']`、`[data-turn-trigger]`、`[data-composer-card]`、`[data-slot='conversation.header']`、
+  `div:has(> [data-slot='sidebar'])`、`[data-sidebar-right-panel]`），与 §10/§11 同一套 hook。
+- 本轮环境限制：DSH 桌面端当前为**非 development 启动**（菜单里没有「刷新页面」），
+  插件 client 的 HMR 通道在最近一次重启后不再推送；因此新 bundle 需要**下一次启动/重载页面**
+  才能在界面上看到。`plugin/lib/client.js` 已是最新构建（141.9 KiB）。
+
+
 

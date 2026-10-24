@@ -88,3 +88,18 @@ node tools/build-plugin.mjs     # 合并 src/styles/*.css（按文件名排序�
 - [ ] 弹窗打开时文字清晰，背景内容不穿透干扰阅读。
 - [ ] 没有横向滚动条、没有双发丝边、没有“白底白字”。
 - [ ] 截图对比 `baseline/reference/deepseek-web.png`：留白、圆角、蓝色强调、层叠关系一致。
+- [ ] 拖动左右分栏/面板边界：`html[data-dsg-resizing]` 只在拖动期间存在，松手后消失，静态外观不变。
+- [ ] 设置页在中文 DSH 下全中文、切英文自动跟随；`node tools/test-plugin-logic.mjs` 全 PASS。
+
+## 7. 运行时约定（v1.6 起）
+
+1. **拖动降级（resize guard）**：`plugin/src/client-template.js` 的 `initResizeGuard`
+   在指针位移 >4px 时给根节点加 `data-dsg-resizing`，`pointerup/pointercancel/blur/15s` 移除。
+   样式层只允许在该状态下降低材质成本（去掉 backdrop-filter 与超大外投影），**禁止**在
+   非拖动状态下改变静止外观；新增玻璃面时请把它加入 `00-foundation.css` 的 resize guard 块。
+2. **i18n 不可缓存**：设置页文案统一走 `T(zh, en)`；`currentLanguage()` 每次求值
+   （DSH `locale` 服务 → `<html lang>` → `navigator.language` → 默认 `zh`），并订阅
+   `locale/change` 重渲染。不要在模块作用域缓存语言。
+3. **工具**：`tools/test-plugin-logic.mjs` 是这两个机制的回归测试，提交前必须跑通；
+   `tools/dsh-drag.ps1` 可复现拖动（会临时改窗口焦点，注意不要在用户输入时使用）。
+

@@ -72,6 +72,7 @@ git checkout baseline-v0 -- .
 - [x] 视觉验收（截图）+ 交互保持（fixed 浮层/命中区/滚动）
 - [x] 对话页顶层 header 悬浮玻璃条（v1.4-ui）
 - [x] 右侧边栏玻璃化：文件浏览器 / 上下文洞察共享对话背景（v1.5-ui）
+- [x] 拖动分栏性能优化（resize guard）+ 设置页中文（v1.6-ui）
 - [ ] 可选后续：菜单/审批卡/右栏文档预览的人工视觉复核；壁纸共存回归；生成式云雾背景
 
 ## 2026-10-24 追加修复：Windows 标题栏
@@ -99,3 +100,16 @@ git checkout baseline-v0 -- .
 原理、采样与浅深两套截图见 [`docs/REPORT.md`](docs/REPORT.md) 第 11 节；
 实现文件 `plugin/src/styles/60-settings.css` §4 与 `plugin/src/styles/10-shell.css` §4。
 新增交付标签：`v1.5-ui`。
+
+## 2026-10-24 追加：拖动分栏性能 + 设置页中文
+
+- **拖动卡顿**：拖动左右分栏时每帧重排，几十个 `backdrop-filter` 玻璃面（尤其逐个挂霜的消息气泡）
+  每帧重采样 backdrop，是掉帧主因。now client 在指针拖动 >4px 时给 `<html>` 打
+  `data-dsg-resizing`，CSS 只在拖动期间卸掉霜与超大外投影（背后是平滑氛围层，观感几乎无差），
+  松手立即恢复，静止/拖动结束外观不变。
+- **设置页中文**：语言检测从「模块加载时缓存」改为每次读取 DSH `locale` 服务 / `<html lang>` /
+  `navigator.language`，未知时默认中文，并订阅 `locale/change` 即时重渲染。
+- 单元测试 `node tools/test-plugin-logic.mjs` 覆盖 drag guard 与 i18n 选择；
+  原理见 [`docs/REPORT.md`](docs/REPORT.md) 第 12 节。
+- 皮肤命名建议见 [`docs/NAMING.md`](docs/NAMING.md)（首选「澜镜 / Lan Mirror」）。
+- 新增交付标签：`v1.6-ui`。

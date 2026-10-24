@@ -18,6 +18,9 @@ public class DshClick{
  [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h,int c);
  [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
  [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+ [DllImport("user32.dll")] public static extern void keybd_event(byte vk,byte scan,uint flags,UIntPtr extra);
+ public static void Focus(IntPtr h){ if(GetForegroundWindow()==h) return; ShowWindow(h,9); keybd_event(0x12,0,0,UIntPtr.Zero); System.Threading.Thread.Sleep(60); keybd_event(0x12,0,2,UIntPtr.Zero); System.Threading.Thread.Sleep(120); SetForegroundWindow(h);}
+ [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
  [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr h);
  [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h,out RECT r);
  [DllImport("dwmapi.dll")] public static extern int DwmGetWindowAttribute(IntPtr h,int a,out RECT r,int c);
@@ -35,8 +38,14 @@ $h = [DshClick]::Find($TitleContains)
 if ($h -eq [IntPtr]::Zero) { Write-Error "DSH window not found"; exit 1 }
 $wasMin = [DshClick]::IsIconic($h)
 if ($wasMin -or $RestoreMinimized) { [DshClick]::ShowWindow($h, 9) | Out-Null; Start-Sleep -Milliseconds 500 }
-[DshClick]::SetForegroundWindow($h) | Out-Null
-Start-Sleep -Milliseconds 400
+# Only steal focus when needed: re-focusing a window can dismiss an open popup/menu
+# before the click lands (which swallowed the "Settings" menu row in earlier tries).
+if ([DshClick]::GetForegroundWindow() -ne $h) {
+  [DshClick]::Focus($h)
+  Start-Sleep -Milliseconds 350
+} else {
+  Start-Sleep -Milliseconds 60
+}
 $r = [DshClick]::Rect().Split(',')
 $sx = [int]$r[0] + $X
 $sy = [int]$r[1] + $Y

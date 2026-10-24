@@ -11,6 +11,9 @@ node tools/build-plugin.mjs
 ```
 - 修改 `plugin/src/styles/*.css` 或 `plugin/src/client-template.js` 后必须构建。
 - 构建产物 `plugin/lib/client.js` 由 client-modules 以 HMR 推送到已打开的页面（2–4 秒）。页面无需刷新；若长时间未生效，检查 DSH 是否仍运行。
+- 若 DSH 桌面端以**非 development** 方式启动（「应用/编辑」菜单里没有「刷新页面」、F12 无效），
+  其页面不会热重载；此时改完 CSS/JS 后需要**重启一次 DSH**（或让宿主重新加载页面）才可见。
+  本仓库 `v1.6-ui` 之后即遇到这种情况：`plugin/lib/client.js` 已是最新构建，界面需重启后生效。
 
 ## 安装 / 重装
 

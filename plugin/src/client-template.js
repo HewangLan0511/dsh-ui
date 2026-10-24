@@ -151,11 +151,28 @@ window.__ModuleLoader__.load({
     }
 
     // ---- settings section (deepseek web styled by the global sheet) ----
-    var zh = (function () {
-      try { return String(document.documentElement.lang || navigator.language || '').toLowerCase().indexOf('zh') === 0 }
-      catch (e) { return false }
-    })()
-    function T(zhText, enText) { return zh ? zhText : enText }
+    // DSH 的 locale 服务会把 <html lang> 同步成 zh-CN / en，但本插件（immediately
+    // 加载）可能在 locale 初始化之前执行，所以不能把语言缓存成模块作用域常量。
+    // 这里每次按当前 locale 判定，并在 locale/change 时重渲染设置页。
+    function currentLanguage() {
+      try {
+        var locale = ctxRef && ctxRef.get ? ctxRef.get('locale') : null
+        if (locale && typeof locale.getSnapshot === 'function') {
+          var snap = locale.getSnapshot()
+          if (snap && snap.active) return String(snap.active)
+        }
+      } catch (e) { /* non-fatal */ }
+      try {
+        var htmlLang = document && document.documentElement && document.documentElement.lang
+        if (htmlLang) return String(htmlLang)
+      } catch (e) { /* non-fatal */ }
+      try {
+        if (typeof navigator !== 'undefined' && navigator.language) return String(navigator.language)
+      } catch (e) { /* non-fatal */ }
+      return 'zh' // 产品默认中文
+    }
+    function isZh() { return /^zh/i.test(currentLanguage()) }
+    function T(zhText, enText) { return isZh() ? zhText : enText }
 
     function Row(props) {
       return h('div', { className: 'dsg-row' }, [
@@ -257,10 +274,84 @@ window.__ModuleLoader__.load({
       } catch (e) { /* non-fatal */ }
     }
 
+    // Resize performance guard: while the user drags (sidebar/panel boundary, dockkit
+    // splitter, or any other layout drag) the app relayouts every frame; every surface
+    // with backdrop-filter — every bubble, the sidebars, header, composer — makes
+    // Chromium re-sample and re-blur its backdrop on each frame, which is the visible
+    // jank. We flag <html data-dsg-resizing> once a pointer press turns into a real
+    // drag, so the stylesheet can drop the expensive frosting/shadows for the duration
+    // (the backdrop there is the smooth atmosphere, so it looks almost identical) and
+    // restore them on release. Steady-state appearance is untouched.
+    function initResizeGuard(ctx) {
+      if (typeof document === 'undefined' || typeof window === 'undefined') return
+      if (window.__dsgResizeGuard) return
+      window.__dsgResizeGuard = true
+      var html = document.documentElement
+      var armed = false
+      var active = false
+      var startX = 0
+      var startY = 0
+      var timer = 0
+      function clear() {
+        window.clearTimeout(timer)
+        var was = active
+        armed = false
+        active = false
+        if (was) html.removeAttribute('data-dsg-resizing')
+        window.removeEventListener('pointermove', onMove, true)
+        window.removeEventListener('pointerup', clear, true)
+        window.removeEventListener('pointercancel', clear, true)
+        window.removeEventListener('blur', clear, true)
+      }
+      function onMove(e) {
+        if (!armed || active) return
+        var dx = e.clientX - startX
+        var dy = e.clientY - startY
+        if (dx * dx + dy * dy < 16) return // ~4px: clicks never trigger, drags do
+        active = true
+        html.setAttribute('data-dsg-resizing', '1')
+        window.removeEventListener('pointermove', onMove, true)
+        timer = window.setTimeout(clear, 15000) // safety net
+      }
+      function onDown(e) {
+        if (e.button !== 0) return
+        clear()
+        armed = true
+        startX = e.clientX
+        startY = e.clientY
+        window.addEventListener('pointermove', onMove, true)
+        window.addEventListener('pointerup', clear, true)
+        window.addEventListener('pointercancel', clear, true)
+        window.addEventListener('blur', clear, true)
+      }
+      document.addEventListener('pointerdown', onDown, true)
+      try {
+        ctx.effect(function () {
+          return function () {
+            clear()
+            document.removeEventListener('pointerdown', onDown, true)
+            window.__dsgResizeGuard = false
+          }
+        }, 'dsh-ui-deepseek: resize guard')
+      } catch (e) { /* non-fatal */ }
+    }
+
     function apply(ctx) {
       ctxRef = ctx
       detectGlassFallback()
       syncDesktopCaption(ctx)
+      initResizeGuard(ctx)
+
+      // settings labels follow the live DSH locale (zh is the product default)
+      try {
+        ctx.effect(function () {
+          var handler = function () { emit() }
+          try { ctx.on('locale/change', handler) } catch (e) { /* non-fatal */ }
+          return function () {
+            try { if (ctx.off) ctx.off('locale/change', handler) } catch (e) { /* non-fatal */ }
+          }
+        }, 'dsh-ui-deepseek: locale labels')
+      } catch (e) { /* non-fatal */ }
 
       // 0. first activation: adopt the DeepSeek-web light palette once. Later
       // changes made in DSH's native Appearance settings are left alone.
