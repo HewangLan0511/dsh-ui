@@ -32,7 +32,7 @@ node tools/release.mjs
 npm login
 npm whoami                      # 应输出你的 npm 用户名
 
-# 发布（在 plugin/ 目录）
+# 发布（在 plugin/ 目录；带 2FA 的账号会要求输入一次性密码）
 cd plugin
 npm publish --access public
 ```
@@ -41,7 +41,14 @@ npm publish --access public
 
 - 包名 `dsh-skin-mistblue` 在 npm 上**未被占用**（2026-10-24 查询 404），可直接用；
 - 未 scoped 的包默认 public，`--access public` 只是显式声明；
-- 若开启 2FA，发布时会要求一次性密码；
+- 当前账号 `baiyu0511` 的登录态在发布时被 npm 拒绝：
+  `403 ... Two-factor authentication or granular access token with bypass 2fa enabled is required`。
+  两条路：
+  1. **交互发布**：在自己的终端执行 `npm publish --access public`，按提示输入 2FA 一次性密码；
+  2. **Bypass 2FA 令牌**：npmjs.com → Access Tokens → Generate New Token → Granular，
+     权限 Read and write、包范围 `dsh-skin-mistblue`，勾选 **Bypass 2FA**；
+     然后 `npm config set //registry.npmjs.org/:_authToken <token>`（写入本机 ~/.npmrc），
+     之后 `npm publish` 即可非交互完成。
 - 发布后验证：
   ```powershell
   npm view dsh-skin-mistblue version dist.tarball
