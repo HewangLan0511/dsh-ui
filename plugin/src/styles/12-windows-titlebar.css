@@ -1,4 +1,4 @@
-﻿/* ============================================================================
+/* ============================================================================
    12 windows titlebar — 修复 Windows 原生标题栏（菜单条 + 窗口控制按钮）色差
    ----------------------------------------------------------------------------
    背景：DSH Desktop 的 preload 注入一个 Shadow DOM 菜单条 div[data-windows-menu]，
@@ -46,10 +46,12 @@ html[data-dsg='on'][data-windows-titlebar] [data-slot='root'] > [class*='_frame'
 }
 
 /* 3) 菜单条：
-   · 宿主 div[data-windows-menu] 保持完全透明，与标题栏背景同色（不要再铺 L3 板）；
-   · 左侧用「分栏/侧栏」线条图标（mask 着色，light #4d6bfe / dark #7aaaff）；
-   · 菜单按钮的 hover 仍走 DSH 自带 token。 */
-html[data-dsg='on'][data-windows-titlebar] {
+   · 宿主 div[data-windows-menu] 保持完全透明，与标题栏背景同色；
+   · 不再自绘左侧图标 —— 标题栏左侧 12px 处是 DSH 自带的「侧栏收起/展开」按钮
+     （collapsed 时 48px 处还有「新会话」按钮），自绘图标会与之重叠；
+   · 菜单起点只在「侧栏展开」时右移到 54px（给 native toggle 留位）；
+     收起时交回 DSH 的 84px，避开左侧两个 28px 按钮。 */
+html[data-dsg='on'][data-windows-titlebar]:not(:has([data-sidebar-collapsed='true'])) {
   --dsh-windows-menu-start: 54px;
 }
 html[data-dsg='on'][data-windows-titlebar] div[data-windows-menu] {
@@ -58,27 +60,4 @@ html[data-dsg='on'][data-windows-titlebar] div[data-windows-menu] {
   box-shadow: none !important;
   color: var(--dsw-alias-label-secondary);
 }
-html[data-dsg='on'][data-windows-titlebar] div[data-windows-menu]::before {
-  content: '';
-  position: absolute;
-  left: -42px;
-  top: 50%;
-  width: 18px;
-  height: 18px;
-  transform: translateY(-50%);
-  background-color: var(--dsg-blue);
-  opacity: 0.92;
-  pointer-events: none;
-  -webkit-mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+PHJlY3QgeD0iMy4yIiB5PSI0LjIiIHdpZHRoPSIxNy42IiBoZWlnaHQ9IjE1LjYiIHJ4PSIzIiBzdHJva2U9IiNmZmYiIHN0cm9rZS13aWR0aD0iMS44Ii8+PHBhdGggZD0iTTkuMiA0LjZ2MTQuOCIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjEuOCIvPjwvc3ZnPg==");
-  mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+PHJlY3QgeD0iMy4yIiB5PSI0LjIiIHdpZHRoPSIxNy42IiBoZWlnaHQ9IjE1LjYiIHJ4PSIzIiBzdHJva2U9IiNmZmYiIHN0cm9rZS13aWR0aD0iMS44Ii8+PHBhdGggZD0iTTkuMiA0LjZ2MTQuOCIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjEuOCIvPjwvc3ZnPg==");
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  mask-position: center;
-  -webkit-mask-size: contain;
-  mask-size: contain;
-}
-html[data-dsg='on'][data-windows-titlebar] body[data-ds-dark-theme] div[data-windows-menu]::before {
-  background-color: #7aaaff;
-  opacity: 0.95;
-}
+

@@ -171,3 +171,26 @@ effAlpha = floor + a · (1 − floor)        floor = 0.45（浅）/ 0.59（深�
 ![标题栏·浅色（线条图标版）](assets/final/titlebar-light.png)
 
 > 深色使用同一套规则（`#7aaaff` 线条 + `#0b1322` 标题栏），本次因用户正在输入未再次切换深色截图。
+
+### 9.2 追加反馈修复（第三轮）：侧栏收起/展开态标题栏错位
+
+用户反馈：收起/展开左侧边栏时，标题栏出现多余的蓝色线条（压在原生的「分栏」图标上、并挤到「应用」文字前）。
+
+根因：
+- 标题栏左侧 12px 处是 DSH 自带的**侧栏收起/展开按钮**（28×28 的 panel 图标），收起态 48px 处还有「新会话」按钮；
+- `12-windows-titlebar.css` 之前在这两个位置自绘了同款线条图标，并且把 `--dsh-windows-menu-start` 固定成 54px，
+  覆盖了 DSH 收起态的 84px —— 于是自绘图标压住原生 panel 图标、`应用` 压住「新会话」的 + 按钮。
+
+修法：
+- **删除自绘图标**，让 DSH 原生的 panel 图标与「新会话」按钮正常显示；
+- 菜单起点只在**侧栏展开**时用 54px；收起时交回 DSH 的 84px：
+  `html[data-dsg='on'][data-windows-titlebar]:not(:has([data-sidebar-collapsed='true'])) { --dsh-windows-menu-start: 54px; }`
+- 菜单宿主继续保持透明背景（9.1 的修复不变）。
+
+验证：
+- 展开态：panel 图标（灰）→ `应用 编辑`，无重叠；
+- 收起态：panel 图标（带蓝点）→ 新会话 + → `应用 编辑`，菜单正确右移，无重叠。
+
+![标题栏·展开态](assets/final/titlebar-light.png)
+
+![标题栏·收起态](assets/final/titlebar-collapsed.png)
