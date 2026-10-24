@@ -48,6 +48,7 @@ node tools/build-plugin.mjs     # 合并 src/styles/*.css（按文件名排序�
 | `--dsg-motion-dur`、`--dsg-ease` | 动效时长与缓动 |
 | `--dsg-blue`、`--dsg-blue-strong`、`--dsg-blue-soft`、`--dsg-blue-ring` | DeepSeek 蓝与状态 |
 | `--dsg-header-radius / -fill / -backdrop / -sweep` | 会话 header 悬浮玻璃条（10-shell.css 自建：18px 圆角、17%/47% 填充、24px 霜、镜面扫光）；header 的霜必须仍挂 `::before` |
+| `--dsg-panel-fill / -backdrop` | 右栏面板玻璃（10-shell.css 自建：浅 18% 白 / 深 46% `#0d1524`、22px 霜）；**玻璃只允许画在面板 `::before` 一次**，本体与 dockkit 中间层必须透明（否则层层叠白） |
 
 **分级使用规则**
 - L1（内容面/大容器）：`--dsg-fill-l1` +（可选）`--dsg-backdrop-l1`；大滚动容器**不要**挂 backdrop-filter（性能）。

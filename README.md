@@ -71,6 +71,7 @@ git checkout baseline-v0 -- .
 - [x] 浅色/深色双主题 + 降级策略 + 动效
 - [x] 视觉验收（截图）+ 交互保持（fixed 浮层/命中区/滚动）
 - [x] 对话页顶层 header 悬浮玻璃条（v1.4-ui）
+- [x] 右侧边栏玻璃化：文件浏览器 / 上下文洞察共享对话背景（v1.5-ui）
 - [ ] 可选后续：菜单/审批卡/右栏文档预览的人工视觉复核；壁纸共存回归；生成式云雾背景
 
 ## 2026-10-24 追加修复：Windows 标题栏
@@ -88,3 +89,13 @@ git checkout baseline-v0 -- .
 深色同构、窄窗与无霜/软件光栅化有回退。原理与实机截图见
 [`docs/REPORT.md`](docs/REPORT.md) 第 10 节；实现文件 `plugin/src/styles/10-shell.css`。
 新增交付标签：`v1.4-ui`。
+
+## 2026-10-24 追加：右侧边栏玻璃化
+
+右栏（文件浏览器 / 上下文洞察，含打开 tab 后的界面）原来是一块叠了好几层半透明白的「白板」：
+面板壳被 60-settings 与 10-shell 各画一遍玻璃，dockkit 的 panelBody / surface / tabHost / paneBody
+又各带一层底。现在玻璃只保留 `::before` 一层（浅 18% 白 / 深 46% `#0d1524`、22px 霜），
+所有中间容器清零，氛围层直接透上来 —— 右栏与对话区共享同一张背景，列表/统计卡在玻璃上自然分层。
+原理、采样与浅深两套截图见 [`docs/REPORT.md`](docs/REPORT.md) 第 11 节；
+实现文件 `plugin/src/styles/60-settings.css` §4 与 `plugin/src/styles/10-shell.css` §4。
+新增交付标签：`v1.5-ui`。

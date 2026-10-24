@@ -324,18 +324,20 @@ html[data-dsg='on'] [role='dialog'][aria-modal='true'] [class*='_installDialog']
 }
 
 /* ============================================================================
-   4. right sidebar (dockkit) — L2 shell, L1 pane bodies, L3 fullscreen
-   ========================================================================== */
+   4. right sidebar (dockkit) — 单层玻璃壳 + L1 pane bodies + L3 fullscreen
+   ============================================================================
+   玻璃只在 ::before（10-shell §4）画一次；本体保持透明。之前本体也铺了 fill-l2，
+   再叠上 dockkit 各层的半透明底，整块面板被洗成不透明白 —— 面板与对话区不再共享
+   背景。这里把本体与所有中间容器清零，只留一层霜。*/
 html[data-dsg='on'] [data-rightbar-col] [data-sidebar-right-panel]:not([aria-hidden='true']),
 html[data-dsg='on'] [data-sidebar-right-panel][data-sidebar-right-open] {
-  background-color: var(--dsg-fill-l2);
-  background-image: var(--dsg-sheen-l2);
-  -webkit-backdrop-filter: var(--dsg-backdrop-l2);
-  backdrop-filter: var(--dsg-backdrop-l2);
+  background-color: transparent;
+  background-image: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   border-left: 0.5px solid var(--dsg-border-hair);
   border-radius: 18px 0 0 18px;
   box-shadow: -14px 0 44px rgba(44, 74, 140, 0.1);
-  /* backdrop-filter forms a stacking context: keep the dock above the shell */
   z-index: var(--dsh-dockkit-dock-layer, 10);
 }
 /* closed state must be explicitly clean (container stays mounted) */
@@ -347,15 +349,26 @@ html[data-dsg='on'] [data-rightbar-col] [data-sidebar-right-panel][aria-hidden='
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
-/* fullscreen right panel = detail surface → L3 */
+/* fullscreen right panel = detail surface → L3（只换 ::before 的两个变量） */
 html[data-dsg='on'] [data-sidebar-right-panel][data-sidebar-right-mode='fullscreen'] {
-  background-color: var(--dsg-fill-l3);
-  -webkit-backdrop-filter: var(--dsg-backdrop-l3);
-  backdrop-filter: var(--dsg-backdrop-l3);
+  --dsg-panel-fill: var(--dsg-fill-l3);
+  --dsg-panel-backdrop: var(--dsg-backdrop-l3);
 }
-/* dockkit surfaces / panes are transparent so the shell fill reads through */
-html[data-dsg='on'] [data-sidebar-right-panel] :is([data-dockkit-surface], [data-dockkit-pane], [data-dockkit-host]) {
-  background-color: transparent;
+/* dockkit 中间层全部透明：surface / host / pane / paneBody / panelBody / tabHost…
+   这些容器原本各带 --dsw-alias-bg-base 或 bg-layer 层，叠在玻璃壳上会发白。 */
+html[data-dsg='on'] [data-sidebar-right-panel] :is(
+    [data-dockkit-surface],
+    [data-dockkit-host],
+    [data-dockkit-pane],
+    [data-dockkit-content],
+    [class*='_panelBody'],
+    [class*='_tabLayout'],
+    [class*='_tabCell'],
+    [class*='_tabHost'],
+    [class*='_paneBody']
+  ) {
+  background-color: transparent !important;
+  background-image: none !important;
 }
 html[data-dsg='on'] [data-sidebar-right-panel] [data-dockkit-pane] {
   border-radius: 14px;

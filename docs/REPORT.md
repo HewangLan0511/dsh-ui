@@ -246,3 +246,54 @@ effAlpha = floor + a · (1 − floor)        floor = 0.45（浅）/ 0.59（深�
 > 「一块独立、有厚度、浮在氛围上的玻璃」。若后续想回到通栏，只需去掉 §3 外槽 padding 与圆角，
 > 保留 §1 的衬光和 §3 的填充/投影即可。
 
+---
+
+## 11. 右侧边栏玻璃化（2026-10-24 第五轮，仓库标签 `v1.5-ui`）
+
+### 11.1 诉求
+
+右栏（文件浏览器 / 上下文洞察，含打开某个 tab 后的界面）要和对话区**共享同一张背景**：
+不再是一块不透明白板，而是玻璃面 —— 透明、有霜（模糊），文字/图表仍清晰。
+
+### 11.2 根因：三层叠白
+
+- **双层玻璃**：面板壳同时被两处画了玻璃 —— `60-settings.css §4` 在面板元素上铺
+  `fill-l2 + sheen-l2 + backdrop-l2`，`10-shell.css §4` 又在它的 `::before` 上铺了同一套。
+  fill 叠两次 ≈ 64% 白，再加釉光。
+- **dockkit 中间层叠底**：`.OUqwTW_panelBody`、`_surface_*`、`_tabHost`、`_paneBody`、`_tabCell`
+  这些容器各自带 `--dsw-alias-bg-base` / `--dsw-alias-bg-layer-*` 半透明底，层层叠在壳上；
+  文件浏览器 / 上下文插件自身还有 bg-layer 卡片。
+- 结果：右栏实测 `#FDFEFF`（几乎纯白），而旁边对话区是 `#DDEEF6` —— 背景完全脱钩。
+
+### 11.3 做法（只改 `60-settings.css §4` + `10-shell.css §4`）
+
+1. **玻璃只画一层**：面板本体改为透明、不挂霜；`::before` 仍按契约做唯一载体
+   （负 z-index、无 fixed 后代），并新增面板专属变量
+   `--dsg-panel-fill / --dsg-panel-backdrop`（浅 18% 白、深 46% `#0d1524`；`blur(22px)` + saturate）。
+2. **清掉 dockkit 中间层**：`[data-dockkit-surface|host|pane|content]` 与
+   `[class*="_panelBody|_tabLayout|_tabCell|_tabHost|_paneBody"]` 全部 `background: transparent !important`
+   —— 让氛围层透上来，只留面板壳这一层霜。
+3. **保留内容可读性**：文件列表/上下文卡片本来就吃 `--dsw-alias-bg-layer-*`（29.3% / 39.8% 白），
+   在玻璃壳上自然形成「玻璃上的玻璃卡」；图表、代码、文档预览继续用它们自己的实底，
+   文档预览仍是纸面（不参与玻璃化，保证长文可读）。
+4. **全屏右栏仍走 L3**：只把 `--dsg-panel-fill/-backdrop` 换成 L3 值，本体不动。
+5. **关闭态**：`aria-hidden=true` 时元素与 `::before` 全部清干净（容器常驻布局）。
+
+### 11.4 验证
+
+| 场景 | 截图 |
+|---|---|
+| 浅色·右栏文件浏览器 | [`assets/final/right-panel-files-glass.png`](assets/final/right-panel-files-glass.png) |
+| 浅色·右栏上下文洞察 | [`assets/final/right-panel-context-glass.png`](assets/final/right-panel-context-glass.png) |
+| 深色·右栏文件浏览器 | [`assets/final/right-panel-files-glass-dark.png`](assets/final/right-panel-files-glass-dark.png) |
+| 深色·右栏上下文洞察 | [`assets/final/right-panel-context-glass-dark.png`](assets/final/right-panel-context-glass-dark.png) |
+
+- 浅色采样：右栏内 `#EAF2FC`（同高度的对话区 `#CFDEF2`，同色系、更亮）——氛围层确实透上来了，
+  面板不再自成一块白板；顶部因 sheen 略亮，向左下渐隐。
+- 深色同构（`#0d1524` 46% + 22px 霜），卡片/图表/文字对比度保持；tab 胶囊、关闭、全屏按钮均可用。
+- 深色验证方式：临时把 profile 的 `ui-theme.preference` 改为 `dark` 截图，随后已改回 `light`。
+
+> 注意：右栏的「打开某文件后的文档/代码预览」按设计仍是实底纸面（§5），
+> 那是阅读面，不跟随玻璃化；只有面板外壳、tab 条、列表与统计卡走玻璃。
+
+
