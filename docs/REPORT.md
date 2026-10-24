@@ -620,7 +620,7 @@ node tools/release.mjs
 
 ---
 
-## 19. 左侧面板列表：拖动换位 + 再次点击返回（2026-10-24 第十三轮，`v1.13-ui` / `1.0.1`）
+## 19. 左侧面板列表：拖动换位 + 再次点击返回（2026-10-24 第十三 / 十四轮，`v1.13-ui` → `v1.14-ui`）
 
 用户要求把「插件 / 上下文洞察 / MCP 连接器 …」这些左侧面板选项做成可拖动换位，
 并支持“点开后再点一次返回上一个窗口”。
@@ -645,6 +645,10 @@ node tools/release.mjs
   `tools/test-plugin-logic.mjs` 9/9 PASS。
 - 拖拽的实机自动化受窗口 DPI / 浮窗抢占影响（pointerdown 常落到行外），
   以代码路径 + 一次成功换位（顺序被持久化并重放）为准；建议实机拖一下行确认手感。
+
+### 19.4 v1.0.2：改用原生 HTML5 拖放
+
+1.0.1 的 document 级 pointerdown 阈值方案在实机上拖不动（宿主 tooltip / click 处理吃掉或干扰事件），改为行 `draggable` + `dragstart / dragover / drop / dragend`：dragover 高亮落点行，drop 按落点前后行改 CSS `order`；原生 DnD 不产生 click，点击 / 再次点击返回逻辑不变。面板列表禁用文本选择，drop 后 120ms 内吞掉合成 click。
 
 ### 19.3 说明
 

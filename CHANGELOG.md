@@ -3,6 +3,19 @@
 本项目的版本分两套：`vX.Y-ui` 是界面迭代里程碑（git tag），`1.x` 是插件对外的发布版本。
 插件版本在 `plugin/package.json`；界面里程碑与发布版本的关系如下。
 
+## 1.0.2 — 2026-10-24
+
+拖动换位改用 **HTML5 原生 drag & drop**（1.0.1 的 pointer 事件方案在宿主
+tooltip/click 处理下不稳定，实测拖不动，且偶尔把普通点击当成拖动结束）：
+
+- 行设 `draggable`，`dragstart / dragover / drop / dragend` 全程接管：
+  dragover 高亮落点行，drop 时按落点前后的行改 CSS `order`，顺序仍持久化到
+  `localStorage: dsh-skin-mistblue/panel-order`；
+- 原生 DnD 不会产生 click，点击打开/再次点击返回逻辑保持原样；
+  drop 后 120ms 内吞掉可能的合成 click，避免误开面板；
+- 面板列表区域禁用文本选择，拖动失败也不会把整页字选中。
+- 发布：`dsh-skin-mistblue@1.0.2`（tag `v1.14-ui`）。
+
 ## 1.0.1 — 2026-10-24
 
 左侧面板列表增强（纯客户端，不改宿主）：

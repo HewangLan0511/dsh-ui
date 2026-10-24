@@ -1,42 +1,44 @@
 /* ============================================================================
-   dsh-skin-mistblue · 23 panel reorder (v1.13)
+   dsh-skin-mistblue · 23 panel reorder (v1.14)
    ----------------------------------------------------------------------------
-   Client half (`initSidebarEnhancer`) adds two behaviours to the left sidebar
-   panel list (插件 / 上下文洞察 / MCP 连接器 …):
-     · drag a row up/down to reorder it (per-row CSS `order`, persisted);
-     · click the already-open row again to return to the previous view.
-   The host owns the DOM, so reordering is done with `style.order` on the flex
-   column (no node moves → React keys and hit areas stay intact).
+   Left sidebar panel list (插件 / 上下文洞察 / MCP 连接器 …) gets two behaviours
+   from `initSidebarEnhancer`:
+     · HTML5 drag & drop to reorder — rows become draggable, drop writes per-row
+       CSS `order` (no DOM moves) and persists the label order in localStorage;
+     · clicking the already-open row returns to the Conversation via the layout
+       service (`layout.selectPanel(null)`).
+   Native DnD is used on purpose: pointer-event heuristics conflict with the
+   host tooltip/click handlers, while dragstart/dragover/drop never fire a click.
    ========================================================================== */
 
 html[data-dsg='on'] nav[class*='_panelList'] > button[class*='_panelRow'] {
   cursor: grab;
-  transition:
-    transform 120ms var(--dsg-ease),
-    box-shadow 120ms var(--dsg-ease),
-    background-color 120ms var(--dsg-ease);
+  -webkit-user-drag: element;
 }
 
-html[data-dsg='on'][data-dsg-panel-drag] body {
+html[data-dsg='on'] nav[class*='_panelList'] {
   user-select: none;
+  -webkit-user-select: none;
+}
+
+html[data-dsg='on'] nav[class*='_panelList'] > button[class*='_panelRow']:active {
   cursor: grabbing;
 }
 
 html[data-dsg='on'] nav[class*='_panelList'] > button[class*='_panelRow'].dsg-panel-row-drag {
-  position: relative;
-  z-index: 3;
-  cursor: grabbing;
-  opacity: 0.94;
-  transform: scale(1.015);
+  opacity: 0.55;
+}
+
+html[data-dsg='on'] nav[class*='_panelList'] > button[class*='_panelRow'].dsg-panel-row-drop {
   background-color: var(--dsg-row-hover) !important;
   box-shadow:
-    0 10px 24px -10px rgba(23, 48, 108, 0.38),
-    inset 0 1px 0 rgba(255, 255, 255, 0.42);
+    inset 0 0 0 1.5px rgba(77, 107, 254, 0.5),
+    0 6px 18px -10px rgba(23, 48, 108, 0.35);
 }
 
 html[data-dsg='on'] body[data-ds-dark-theme]
-  nav[class*='_panelList'] > button[class*='_panelRow'].dsg-panel-row-drag {
+  nav[class*='_panelList'] > button[class*='_panelRow'].dsg-panel-row-drop {
   box-shadow:
-    0 12px 26px -12px rgba(0, 0, 0, 0.6),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    inset 0 0 0 1.5px rgba(123, 147, 255, 0.55),
+    0 8px 20px -12px rgba(0, 0, 0, 0.6);
 }

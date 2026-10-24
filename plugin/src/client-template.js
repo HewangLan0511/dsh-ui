@@ -381,12 +381,15 @@ window.__ModuleLoader__.load({
       var ROW_SEL = 'button[class*="_panelRow"]'
       var NAV_SEL = 'nav[class*="_panelList"]'
       var TAB_SEL = '[data-conversation-tabs] [role="tab"]'
-      var drag = null
-      var suppressClick = false
-      var lastView = null
+      var ORDER_KEY = 'dsh-skin-mistblue/panel-order'
       var nav = null
+      var lastView = null
       var lastSig = ''
       var schedule = false
+      var dragRow = null
+      var dropRow = null
+      var dropAfter = false
+      var suppressClick = false
 
       function rowOf(node) {
         if (!node || node.nodeType !== 1 || !node.closest) return null
@@ -400,8 +403,7 @@ window.__ModuleLoader__.load({
         return row.getAttribute('aria-label') || (row.textContent || '').trim()
       }
       function activeRow() {
-        if (!nav) return null
-        return nav.querySelector(ROW_SEL + '[aria-current="page"]')
+        return nav ? nav.querySelector(ROW_SEL + '[aria-current="page"]') : null
       }
       function activeTab() {
         var tabs = document.querySelectorAll(TAB_SEL)
@@ -425,46 +427,43 @@ window.__ModuleLoader__.load({
       function selectPanel(id) {
         var layout = layoutService()
         if (!layout || typeof layout.selectPanel !== 'function') return false
-        try {
-          layout.selectPanel(id)
-          return true
-        } catch (e) { return false }
+        try { layout.selectPanel(id); return true } catch (e) { return false }
       }
       function readOrder() {
         try {
-          var raw = readItem(PANEL_ORDER_KEY)
-          return raw ? JSON.parse(raw) : []
+          var raw = readItem(ORDER_KEY)
+          var list = raw ? JSON.parse(raw) : []
+          return Array.isArray(list) ? list : []
         } catch (e) { return [] }
       }
       function saveOrder() {
-        var labels = rowsOf()
-          .filter(function (r) { return r.style.order !== '' })
-          .sort(function (a, b) { return (parseInt(a.style.order, 10) || 0) - (parseInt(b.style.order, 10) || 0) })
-          .map(labelOf)
-        try { localStorage.setItem(PANEL_ORDER_KEY, JSON.stringify(labels)) } catch (e) { /* non-fatal */ }
+        var labels = visualRows().map(labelOf)
+        try { localStorage.setItem(ORDER_KEY, JSON.stringify(labels)) } catch (e) { /* non-fatal */ }
       }
       function visualRows() {
-        return rowsOf().sort(function (a, b) {
-          var ao = a.style.order === '' ? 9999 : parseInt(a.style.order, 10)
-          var bo = b.style.order === '' ? 9999 : parseInt(b.style.order, 10)
-          if (ao !== bo) return ao - bo
-          return rowsOf().indexOf(a) - rowsOf().indexOf(b)
+        var rows = rowsOf()
+        var indexed = rows.map(function (r, i) { return { r: r, i: i } })
+        indexed.sort(function (a, b) {
+          var ao = a.r.style.order === '' ? 9999 : parseInt(a.r.style.order, 10)
+          var bo = b.r.style.order === '' ? 9999 : parseInt(b.r.style.order, 10)
+          return ao !== bo ? ao - bo : a.i - b.i
         })
+        return indexed.map(function (x) { return x.r })
       }
       function applyOrder() {
-        if (!nav || drag) return
+        if (!nav) return
         var rows = rowsOf()
         if (!rows.length) return
         var sig = rows.map(labelOf).join('|')
-        var missing = rows.some(function (r) { return r.style.order === '' })
+        var missing = rows.some(function (r) { return r.getAttribute('draggable') !== 'true' })
         if (sig === lastSig && !missing) return
         lastSig = sig
         var saved = readOrder()
         rows.forEach(function (r, i) {
+          if (r.getAttribute('draggable') !== 'true') r.setAttribute('draggable', 'true')
           var pos = saved.indexOf(labelOf(r))
           r.style.order = String(pos >= 0 ? pos : saved.length + i)
         })
-        // saved labels that no longer exist shouldn't stretch the order gaps
         visualRows().forEach(function (r, i) { r.style.order = String(i) })
       }
       function scheduleApply() {
@@ -477,94 +476,77 @@ window.__ModuleLoader__.load({
         })
       }
       function setNav(next) {
-        if (nav === next) return
         nav = next
         lastSig = ''
-        if (!nav) return
-        applyOrder()
+        if (nav) applyOrder()
       }
       function findNav() {
         var found = document.querySelector(NAV_SEL)
         if (found) setNav(found)
       }
-      function reorderTo(x, y) {
-        if (!nav || !drag) return
-        // Geometry based (not elementFromPoint): the pointer may sit between rows,
-        // over the tooltip layer or outside the nav while dragging fast.
-        var list = visualRows()
-        var over = null
-        var nearest = null
-        var nearestDist = Infinity
-        for (var i = 0; i < list.length; i++) {
-          var r = list[i]
-          if (r === drag.row) continue
-          var rect = r.getBoundingClientRect()
-          if (y >= rect.top && y <= rect.bottom) { over = r; break }
-          var mid = rect.top + rect.height / 2
-          var d = Math.abs(y - mid)
-          if (d < nearestDist) { nearestDist = d; nearest = r }
-        }
-        var target = over || nearest
-        if (!target || target === drag.row) return
-        var tr = target.getBoundingClientRect()
-        var after = !over || y > tr.top + tr.height / 2
-        var without = list.filter(function (r) { return r !== drag.row })
-        var targetIdx = without.indexOf(target)
-        if (targetIdx < 0) return
-        without.splice(after ? targetIdx + 1 : targetIdx, 0, drag.row)
-        without.forEach(function (r, idx) { r.style.order = String(idx) })
+      function clearDrop() {
+        if (dropRow) dropRow.classList.remove('dsg-panel-row-drop')
+        dropRow = null
       }
-      function cleanupDrag() {
-        if (!drag) return
-        drag.row.classList.remove('dsg-panel-row-drag')
-        document.documentElement.removeAttribute('data-dsg-panel-drag')
-        document.body.style.cursor = ''
-        if (drag.moved) saveOrder()
-        var wasMoved = drag.moved
-        drag = null
-        // A plain click also ends the drag gesture; only a real drag must swallow
-        // the following click, otherwise panel rows would never open.
-        if (wasMoved) {
-          suppressClick = true
-          window.setTimeout(function () { suppressClick = false }, 400)
-        }
-        document.removeEventListener('pointermove', onPointerMove, true)
-        document.removeEventListener('pointerup', onPointerUp, true)
-        document.removeEventListener('pointercancel', onPointerUp, true)
+      function moveRow(dragged, target, after) {
+        var list = visualRows().filter(function (r) { return r !== dragged })
+        var idx = list.indexOf(target)
+        if (idx < 0) return
+        list.splice(after ? idx + 1 : idx, 0, dragged)
+        list.forEach(function (r, i) { r.style.order = String(i) })
       }
-      function onPointerMove(e) {
-        if (!drag || e.pointerId !== drag.pointerId) return
-        if (!drag.moved) {
-          var dx = e.clientX - drag.x
-          var dy = e.clientY - drag.y
-          if (dx * dx + dy * dy < 36) return
-          drag.moved = true
-          document.documentElement.setAttribute('data-dsg-panel-drag', '')
-          document.body.style.cursor = 'grabbing'
-          drag.row.classList.add('dsg-panel-row-drag')
-        }
-        e.preventDefault()
-        reorderTo(e.clientX, e.clientY)
+      function endDrag() {
+        if (dragRow) dragRow.classList.remove('dsg-panel-row-drag')
+        dragRow = null
+        clearDrop()
+        saveOrder()
       }
-      function onPointerUp(e) {
-        if (!drag || e.pointerId !== drag.pointerId) return
-        cleanupDrag()
-      }
-      function onPointerDown(e) {
-        if (e.button !== 0) return
+      function onDragStart(e) {
         var row = rowOf(e.target)
-        if (!row) return
-        if (!nav || !nav.contains(row)) {
-          findNav()
-          if (!nav || !nav.contains(row)) return
+        if (!row || !nav || !nav.contains(row)) return
+        dragRow = row
+        row.classList.add('dsg-panel-row-drag')
+        try {
+          e.dataTransfer.effectAllowed = 'move'
+          e.dataTransfer.setData('text/plain', labelOf(row))
+        } catch (err) { /* non-fatal */ }
+      }
+      function onDragOver(e) {
+        if (!dragRow) return
+        e.preventDefault()
+        try { e.dataTransfer.dropEffect = 'move' } catch (err) { /* non-fatal */ }
+        var target = rowOf(e.target)
+        if (!target || target === dragRow) return
+        if (dropRow !== target) {
+          clearDrop()
+          dropRow = target
+          target.classList.add('dsg-panel-row-drop')
         }
-        drag = { row: row, x: e.clientX, y: e.clientY, pointerId: e.pointerId, moved: false }
-        document.addEventListener('pointermove', onPointerMove, true)
-        document.addEventListener('pointerup', onPointerUp, true)
-        document.addEventListener('pointercancel', onPointerUp, true)
+        var r = target.getBoundingClientRect()
+        dropAfter = e.clientY > r.top + r.height / 2
+      }
+      function onDrop(e) {
+        if (!dragRow) return
+        e.preventDefault()
+        var target = dropRow || rowOf(e.target)
+        var after = dropRow ? dropAfter : false
+        var dragged = dragRow
+        if (target && target !== dragged) {
+          moveRow(dragged, target, after)
+        }
+        dragRow.classList.remove('dsg-panel-row-drag')
+        clearDrop()
+        suppressClick = true
+        window.setTimeout(function () { suppressClick = false }, 120)
+        dragRow = null
+        saveOrder()
+      }
+      function onDragEnd() {
+        suppressClick = true
+        window.setTimeout(function () { suppressClick = false }, 120)
+        endDrag()
       }
       function navigateBack(view) {
-        // authoritative path: layout.selectPanel(null) returns to the Conversation
         if (selectPanel(null)) return true
         if (!view) {
           var tab = document.querySelector(TAB_SEL)
@@ -590,19 +572,15 @@ window.__ModuleLoader__.load({
         if (suppressClick) {
           e.preventDefault()
           e.stopImmediatePropagation()
-          suppressClick = false
           return
         }
         var pid = panelId()
-        var active = activeRow()
-        if (pid !== null && pid !== undefined && active === row) {
-          // second click on the already-open panel: return to the previous view
+        if (pid !== null && pid !== undefined && activeRow() === row) {
           e.preventDefault()
           e.stopImmediatePropagation()
           navigateBack(lastView)
           return
         }
-        // opening a panel: remember where we came from
         var prev = activeRow()
         if (prev && prev !== row) {
           lastView = { type: 'panel', label: labelOf(prev) }
@@ -614,7 +592,10 @@ window.__ModuleLoader__.load({
       function start() {
         findNav()
         if (!nav) return false
-        document.addEventListener('pointerdown', onPointerDown, true)
+        document.addEventListener('dragstart', onDragStart, true)
+        document.addEventListener('dragover', onDragOver, true)
+        document.addEventListener('drop', onDrop, true)
+        document.addEventListener('dragend', onDragEnd, true)
         document.addEventListener('click', onClick, true)
         try {
           var mo = new MutationObserver(scheduleApply)
@@ -622,9 +603,12 @@ window.__ModuleLoader__.load({
           ctx.effect(function () {
             return function () {
               mo.disconnect()
-              document.removeEventListener('pointerdown', onPointerDown, true)
+              document.removeEventListener('dragstart', onDragStart, true)
+              document.removeEventListener('dragover', onDragOver, true)
+              document.removeEventListener('drop', onDrop, true)
+              document.removeEventListener('dragend', onDragEnd, true)
               document.removeEventListener('click', onClick, true)
-              if (drag) cleanupDrag()
+              endDrag()
               nav = null
               window.__dsgSidebarEnhancer = false
             }
