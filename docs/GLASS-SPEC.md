@@ -248,6 +248,7 @@ tint                          = weClampSurfaceColor(色, 主题, fidelity) // �
 - 两处**必须同源**，否则滑杆不再是"一个旋钮"（WE 有守卫 `F1c`：`floor` 声明必须紧跟 `base` 声明，插在中间会让整条可读性网格读到 null）。
 - `chatGlassFidelity` **只作用对话栏的"框架面"**：气泡（`--dsw-specific-bubble`）、输入卡（`--dsw-specific-input-major`，含读同一 token 的工具弹卡）。**markdown 内容面（代码块 / 行内代码 / 标签 / 引用）不跟它**，跟全局 `glassFidelity`（用户口径："代码块不和输入框一起"）。
 - 体验后果（用户配置 `glassFidelity 35 / chatGlassFidelity 10` 的实测换算见 §4）：保真度越低，釉色越接近用户原色、地板越薄、正文在最坏壁纸上越危险；`f=0` 时 `effAlpha = a`（纯釉层，无地板）。
+- **新引擎的强制偏离：L3 的地板不乘 fidelity，且不需要新 token**。WE 只有一个地板常量（所有面同权），但新引擎有"A 预设只给 L1/L2 减薄、L3 恒为 B 档"的需求（§4.4b 护栏 #4）⇒ 做法就一行：`--dsg-fill-l1/l2` 的地板槽位读 `var(--dsg-floor)`（= base × fidelity），`--dsg-fill-l3` 的地板槽位直接读 `var(--dsg-floor-base-light|dark)`。红线没有被放松，而是把"L3 永不参与降薄"从纪律变成结构：**L3 根本没有可被 fidelity 影响的输入**（§6.4）。
 
 ### 2.5 滑杆 → 像素 / alpha 速查
 
@@ -594,6 +595,8 @@ body[data-ds-dark-theme] {
 
 **为什么 blur 是"越低层越糊"而不是"越浮越糊"**：对比度由 alpha 提供，不靠 blur；blur 只负责"化开壁纸"。WE 的实测取值就是反比于文字密度 —— 输入卡 9px、设置窗 8px、侧栏 8px、胶囊 8px、聊天全局 16px（上限 60）。**给 800px 的文字密集 dialog 上 32px 模糊，既不加对比度，又让整块面板每帧重算**（见 §5.9）。
 
+**允许区间（实现可在区间内自选，超出要登记）**：L1 大面**不挂霜**，仅页面级小面（header / sticky 条）6–8px；L2 14–18px；L3 菜单/下拉/hovercard 20–24px；L3 dialog / 设置窗 / 文档预览 **10–14px**。与 live 实现的对照见 §6.4b。
+
 **必须保持更高不透明度（红名单，禁止降到 L1/L2）**：
 
 | 面 | 原因 | 建议下限 |
@@ -631,29 +634,28 @@ L3 面（dialog / 菜单 / 悬停面板）**不参与 A**，继续用 B（floor 
 3. **文字灰阶必须压深**：A 的 `eff=0.398` 下，主题原生的 tertiary `#6e7278` 在最亮雾气区只有 **4.39:1**（差 0.11 就不合格）、在最暗雾气区只剩 **3.1:1**。WE 对壁纸模式做的就是"整条灰阶压深"，A 必须照做：primary `#101728` / secondary `#333c4d` / tertiary `#5c6472` / caption `#626a78`（≥4.9:1）。纯 A + 原生灰阶 = 不可交付。
 4. **L3 不许跟着 A 降**：`L3 = 0.66`（若强行套 A）对正文尚可（4.6–6.5:1），但二级/三级文字、hover 提亮态、以及"深色主题菜单压在亮图上"只剩 4.78:1 的临界值，没有余量。要么 L3 用 B，要么把遮罩暗化保持 `--dsw-alias-bg-mask-1`（浅 `#0000003d` / 深 `#00000080`）且菜单/下拉单独抬到 ≥0.80。
 
-**预设切换（CSS 侧，纯属性驱动）**
+**预设切换（CSS 侧，纯属性驱动；L3 靠"fill-l3 不读 `--dsg-floor`"自动保住，见 §6.4）**
 
 ```css
 /* B：壁纸 / 任意内容背衬（默认；JS 写 data-dsg-has-wallpaper 或 data-dsg-exposure） */
 body[data-dsg-glass] { --dsg-fidelity: 1; }
 
-/* A：受控氛围（无壁纸、氛围层是自家资产、且当前面无任意内容背衬） */
+/* A：受控氛围（无壁纸、氛围层是自家资产、且当前面无任意内容背衬）。
+   只动 L1/L2 的两个旋钮：地板减薄（--dsg-floor 只被 fill-l1/l2 读）+ 釉量。
+   L3 不在此列：fill-l3 的地板槽位直接读 --dsg-floor-base-*，与 fidelity 无关
+   ⇒ 弹窗/菜单恒为 B 档，不需要为它写任何覆盖。 */
 body[data-dsg-glass][data-dsg-atmosphere]:not([data-dsg-has-wallpaper]) {
   --dsg-fidelity: 0.55;
-  --dsg-alpha-l1: 0.06;
-  --dsg-alpha-l2: 0.20;
-  /* L3 保住 B：单独给浮层面一层更高地板 */
-  --dsg-floor-l3: calc(var(--dsg-floor-base-light) * 1);
+  --dsg-a1: 0.06;
+  --dsg-a2: 0.20;
 }
 body[data-ds-dark-theme][data-dsg-glass][data-dsg-atmosphere]:not([data-dsg-has-wallpaper]) {
-  --dsg-alpha-l1: 0.10;
-  --dsg-alpha-l2: 0.26;
-  --dsg-floor-l3: calc(var(--dsg-floor-base-dark) * 1);
+  --dsg-a1: 0.10;
+  --dsg-a2: 0.26;
 }
-
-/* 浮层面（dialog / 菜单 / 悬停面板）永远读 floor-l3 与 alpha-l3（B 档） */
-body[data-dsg-glass] { --dsg-floor-l3: calc(var(--dsg-floor-base-light) * var(--dsg-fidelity-l3, 1)); }
 ```
+
+> **为什么 L3 必须读 base 而不是 `--dsg-floor`**：A 的一个 `--dsg-fidelity: .55` 若同时作用于 L3，会把对话框/菜单的地板一起减薄（正好违反护栏 #4）。让 `fill-l3` 的地板槽位直接读 `--dsg-floor-base-light|dark`，**L3 就没有任何可被 fidelity 影响的输入** —— 这是"L3 不随 A 降"从纪律变成结构的最小实现（一行差异、零新 token；实测 live 代码目前仍读 `--dsg-floor`，需改这一行，见 §6.4b）。
 
 > **给 DESIGN-SPEC 的引用口径**：§4.4 = 红线基准（B）；§4.4b = 参考图预设（A）。两者共用同一个公式与同一组常量（0.45/0.59、1.30/1.04/1.01），差异只在 `fidelity` 与 tier alpha，且 A 有三面护栏（in-flow、氛围亮度下限、压深灰阶）。序列化的默认值建议：**`glassFidelity: 100`、`data-dsg-atmosphere` 由"是否垫了自家氛围层"自动决定**（不是用户开关），这样"有壁纸 ⇒ 自动回 B"无需用户理解两个预设。
 
@@ -791,6 +793,7 @@ body[data-ds-dark-theme] .dsg-aurora { opacity: .35; }   /* 深色档同理：�
 ```
 - **不要复用 `--we-*`**（WE 的命名空间，且它把值写在 `body` 行内样式里，同级样式表压不过）。
 - **优先复用 DSH token 名**做"消费面"（`--dsw-specific-input-major` 等），自有变量只做"来源"。
+- **L3 的地板槽位必须绕过 fidelity**（`--dsg-fill-l3` 直接读 `--dsg-floor-base-light|dark`，不读 `--dsg-floor`）：L1/L2 = base × fidelity，L3 = base 满值。任何"只给内容面/卡片减薄"的预设（A 预设）都只许动 `--dsg-fidelity` 与 `--dsg-a1/a2`，不许给 L3 写覆盖。
 
 ### 6.2 token 表（默认值）
 
@@ -798,10 +801,10 @@ body[data-ds-dark-theme] .dsg-aurora { opacity: .35; }   /* 深色档同理：�
 |---|---|---|
 | `--dsg-tint-light` / `--dsg-tint-dark` | `#ffffff` / `#0d1524` | 钳制后的釉色（`weClampSurfaceColor` 的输出） |
 | `--dsg-tint-rgb-light` / `-dark` | `255 255 255` / `13 21 36` | 空格三元组，供 `rgb()`/`rgba()` |
-| `--dsg-fidelity` | `1` | 0–1，玻璃保真度（两处消费，见 §2.4） |
+| `--dsg-fidelity` | `1` | 0–1，玻璃保真度。**只喂 L1/L2 的地板（`--dsg-floor`）与釉色回退**，不碰 L3 |
 | `--dsg-floor-base-light` / `-dark` | `0.45` / `0.59` | WE 实测常量，**不许调**（调了 4.5:1 判据失效） |
-| `--dsg-floor` | `calc(light × fidelity)` | 当前主题地板；深色块里重算 |
-| `--dsg-alpha-l1/l2/l3` | `0.12 / 0.40 / 0.72` | 三级釉层 alpha（"雾量"滑杆） |
+| `--dsg-floor` | `calc(base × fidelity)` | L1/L2 地板。**L3 不读它**（`fill-l3` 直接读 `--dsg-floor-base-*`）⇒ A 预设减薄不了弹窗 |
+| `--dsg-a1/a2/a3`（别名 `--dsg-alpha-l1/l2/l3`，两个名字等价） | `0.12 / 0.40 / 0.72` | 三级釉层 alpha（"雾量"滑杆）；`aN` 是实现里的规范名 |
 | `--dsg-blur-l1/l2/l3` | `20px / 16px / 12px`（建议 L3=10px） | 雾化半径，0 = 关霜 |
 | `--dsg-sat` / `--dsg-bright` / `--dsg-contrast` | `1.30` / `1.04` / `1.01` | **全局常量，不做分档** |
 | `--dsg-fill-l1/l2/l3` | `color-mix(...)` | 三级填充（已含地板） |
@@ -843,14 +846,15 @@ body {
 
   --dsg-floor-base-light: 0.45;   /* WE READABILITY_FLOOR（实测，勿改） */
   --dsg-floor-base-dark:  0.59;
-  --dsg-floor: calc(var(--dsg-floor-base-light) * var(--dsg-fidelity));
+  --dsg-floor: calc(var(--dsg-floor-base-light) * var(--dsg-fidelity));   /* 只喂 L1/L2 */
 
   --dsg-tint: var(--dsg-tint-light);
   --dsg-tint-rgb: var(--dsg-tint-rgb-light);
 
-  --dsg-alpha-l1: 0.12;
-  --dsg-alpha-l2: 0.40;
-  --dsg-alpha-l3: 0.72;
+  /* 釉量：L1/L2/L3。实现里的规范名是 --dsg-a1/a2/a3，这里两个名字都给（互为别名） */
+  --dsg-alpha-l1: 0.12;  --dsg-a1: var(--dsg-alpha-l1);
+  --dsg-alpha-l2: 0.40;  --dsg-a2: var(--dsg-alpha-l2);
+  --dsg-alpha-l3: 0.72;  --dsg-a3: var(--dsg-alpha-l3);
 
   --dsg-blur-l1: 20px;
   --dsg-blur-l2: 16px;
@@ -864,13 +868,16 @@ body {
   --dsg-backdrop-l2: blur(var(--dsg-blur-l2)) saturate(var(--dsg-sat)) brightness(var(--dsg-bright)) contrast(var(--dsg-contrast));
   --dsg-backdrop-l3: blur(var(--dsg-blur-l3)) saturate(var(--dsg-sat)) brightness(var(--dsg-bright)) contrast(var(--dsg-contrast));
 
-  /* 填充：地板 + 釉层（eff = floor + a·(1-floor)） */
+  /* 填充：地板 + 釉层（eff = floor + a·(1-floor)）。
+     ⚠️ 「L3 不随 A 预设减薄」**不需要新 token**：L3 的地板槽位直接读 base 常量
+        （浅色 --dsg-floor-base-light / 深色块换成 --dsg-floor-base-dark），
+        于是一个 --dsg-fidelity: .55 只影响 L1/L2，L3 恒为满值。 */
   --dsg-fill-l1: color-mix(in srgb, var(--dsg-tint) calc(var(--dsg-floor) * 100%),
-                  rgba(var(--dsg-tint-rgb) / var(--dsg-alpha-l1)) calc((1 - var(--dsg-floor)) * 100%));
+                  rgba(var(--dsg-tint-rgb) / var(--dsg-a1)) calc((1 - var(--dsg-floor)) * 100%));
   --dsg-fill-l2: color-mix(in srgb, var(--dsg-tint) calc(var(--dsg-floor) * 100%),
-                  rgba(var(--dsg-tint-rgb) / var(--dsg-alpha-l2)) calc((1 - var(--dsg-floor)) * 100%));
-  --dsg-fill-l3: color-mix(in srgb, var(--dsg-tint) calc(var(--dsg-floor) * 100%),
-                  rgba(var(--dsg-tint-rgb) / var(--dsg-alpha-l3)) calc((1 - var(--dsg-floor)) * 100%));
+                  rgba(var(--dsg-tint-rgb) / var(--dsg-a2)) calc((1 - var(--dsg-floor)) * 100%));
+  --dsg-fill-l3: color-mix(in srgb, var(--dsg-tint) calc(var(--dsg-floor-base-light) * 100%),
+                  rgba(var(--dsg-tint-rgb) / var(--dsg-a3)) calc((1 - var(--dsg-floor-base-light)) * 100%));
 
   /* 镜面高光 */
   --dsg-sheen-l1: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.03) 38%, rgba(255,255,255,.02));
@@ -896,6 +903,9 @@ body[data-ds-dark-theme] {
   --dsg-floor: calc(var(--dsg-floor-base-dark) * var(--dsg-fidelity));
   --dsg-tint: var(--dsg-tint-dark);
   --dsg-tint-rgb: var(--dsg-tint-rgb-dark);
+  /* L3 的地板槽位在深色块里也换成 base-dark（同一行差异，无新 token） */
+  --dsg-fill-l3: color-mix(in srgb, var(--dsg-tint-dark) calc(var(--dsg-floor-base-dark) * 100%),
+                  rgba(var(--dsg-tint-rgb-dark) / var(--dsg-a3)) calc((1 - var(--dsg-floor-base-dark)) * 100%));
 
   --dsg-sheen-l1: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.02) 38%, rgba(255,255,255,.01));
   --dsg-sheen-l2: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.03) 38%, rgba(255,255,255,.01));
@@ -1049,6 +1059,31 @@ body[data-dsg-fallback] [data-approval-key] [class*="_card"] {
 }
 ```
 
+### 6.4b 与 live 实现的对齐（2026-10-24，`plugin/src/styles/00-foundation.css`）
+
+规范与已落地实现必须只有一份。逐项对照后，**需要改代码的只有第 2 条（一行）**，其余是实现已经正确、本文档向它对齐命名：
+
+| # | 项 | live 实现 | 本规格 | 处置 |
+|---|---|---|---|---|
+| 1 | 变量命名 | `--dsg-floor`（单值）+ `--dsg-a1/a2/a3` | 同一语义，`--dsg-aN` 为规范名，`--dsg-alpha-lN` 为等价别名 | **文档已对齐**（§6.2 / §6.4）；实现无需动 |
+| 2 | L3 地板 | `--dsg-fill-l3` 读 `--dsg-floor` ⇒ A 预设下 L3 变成 `.2475 + .72×.7525 ≈ 79%`（应按 `.45` 地板算到 `.846`） | `fill-l3` 的地板槽位必须读 `--dsg-floor-base-light|dark` | **P0，改一行的代码**：`calc(var(--dsg-floor) * 100%)` → `calc(var(--dsg-floor-base-light) * 100%)`，深色块 → `--dsg-floor-base-dark`。否则"L3 恒为 B 档"失效（正是 §4.4b 护栏 #4） |
+| 3 | 模糊阶梯 | `--dsg-blur-l1: 6px`、`--dsg-blur-l3: 24px` | 推荐 20 / 16 / 10 | **按面重映射即可，不必改数值**（见下） |
+| 4 | 饱和度 / 亮度 / 对比度 | 1.30 / 1.04 / 1.01（全局常量） | 同 | 一致 |
+| 5 | 菜单 / 遮罩通道 | `--dsg-menu-fill .86` / `--dsg-menu-filter` / `--dsg-mask-filter` | 同 | 一致 |
+
+**模糊的"按面"口径（既然实现已经有 6 与 24 两个端点，就别改数字，改映射）**：
+
+| 面 | 用哪个 blur token | 目标值 | 说明 |
+|---|---|---|---|
+| L1 页面级大面 | **不挂霜** | — | 画布级 backdrop 每帧重算（§5.9）；`--dsg-blur-l1: 6px` 只给"页面级小面板"（如 header、sticky 条）用 |
+| L2 卡片 / 输入卡 / 气泡 | `--dsg-blur-l2` | 14–18px（默认 16） | 文字密度中等 |
+| L3 菜单 / 下拉 / hovercard / 小浮层 | `--dsg-blur-l3` | 20–24px | 面积小、文字短；宿主菜单默认就是 `blur(40px)`，24 是"比宿主更克制" |
+| L3 dialog / 设置整窗 / 文档预览 | **单独一个 `--dsg-blur-l3-dialog`（或直接在规则里写 12px）** | 10–14px | 大面积 + 整窗文字；24px 在这里只烧 GPU 不加对比度 |
+
+即：**"L1 6 / L2 16 / L3 24" 不是错，只是把 L3 的 24 用在了 menu 一类；只要 dialog 本体不吃 24px，就与本规格兼容。** 若实现不愿新增 `-dialog` 变量，就按"dialog 用 L2 的 16px"处理（16 在 10–14 的推荐区间上方，代价可接受）。
+
+---
+
 ### 6.5 与 wallpaper-engine 同时启用：冲突矩阵与处理建议
 
 WE 会把值**写在 `body` 行内样式**（`document.body.style.setProperty`），行内样式对同名自定义属性优先级最高；它同时改写的 token 与我们的重合面很大。冲突矩阵：
@@ -1130,6 +1165,8 @@ WE 会把值**写在 `body` 行内样式**（`document.body.style.setProperty`�
 6. 对比度抽检：正文色 vs 合成后表面（最坏背衬 = 浅色纯黑 / 深色纯白）≥4.5:1；浅色地板 0.45、深色 0.59 未被滑杆击穿。
 7. 设置窗打开时同时存在的 `backdrop-filter` 数量 ≤3（遮罩 / 对话框 / 侧栏），避免叠加性能悬崖。
 8. 滚动聊天流 1000px，无 backdrop 区域重绘导致的掉帧（DevTools Performance：`Composite Layers` 每帧 ≤1 次）。
+9. **L3 未随 A 减薄**：`--dsg-fidelity: .55` 时，`getComputedStyle(body)` 的 `--dsg-floor` = `.2475`（深色 `.3245`），而 `--dsg-fill-l3` 的合成 alpha 仍 ≥0.84 —— 证明 `fill-l3` 读的是 `--dsg-floor-base-*` 而不是 `--dsg-floor`。
+10. **变量名两套等价**：`--dsg-a1/a2/a3` 与 `--dsg-alpha-l1/l2/l3` 指向同一值（实现里两组都可能被写，读任一组都应得到同一数字）。
 
 ---
 

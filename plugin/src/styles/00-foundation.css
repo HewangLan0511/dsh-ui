@@ -24,16 +24,23 @@ html[data-dsg='on'] {
   --dsg-floor-base-light: 0.45;
   --dsg-floor-base-dark: 0.59;
   --dsg-floor: calc(var(--dsg-floor-base-light) * var(--dsg-fidelity));
+  /* L3 (popups / details / settings) never drops below the wallpaper-safe
+     floor: readable text is the point of the extra frost. */
+  --dsg-floor-l3: var(--dsg-floor-base-light);
 
   --dsg-a1: 0.06;
   --dsg-a2: 0.20;
-  --dsg-a3: 0.55;
+  --dsg-a3: 0.72;
 
   /* blur ladder: wallpaper-engine's 8px anchor, then readability uplift for
      cards and popups (user requirement: more frost on cards/popups/details). */
   --dsg-blur-l1: calc(6px * var(--dsg-blur, 1));
   --dsg-blur-l2: calc(16px * var(--dsg-blur, 1));
   --dsg-blur-l3: calc(24px * var(--dsg-blur, 1));
+  /* Large-area surfaces: dialogs/settings are expensive to re-blur; menus are
+     small but read better with a slightly softer frost. */
+  --dsg-blur-dialog: calc(12px * var(--dsg-blur, 1));
+  --dsg-blur-menu: calc(20px * var(--dsg-blur, 1));
 
   --dsg-motion: 1;
 
@@ -154,13 +161,15 @@ html[data-dsg='on'] body {
       var(--dsg-tint) calc(var(--dsg-floor) * 100%),
       color-mix(in srgb, var(--dsg-tint) calc(var(--dsg-a2) * 100%), transparent) calc((1 - var(--dsg-floor)) * 100%));
   --dsg-fill-l3: color-mix(in srgb,
-      var(--dsg-tint) calc(var(--dsg-floor) * 100%),
-      color-mix(in srgb, var(--dsg-tint) calc(var(--dsg-a3) * 100%), transparent) calc((1 - var(--dsg-floor)) * 100%));
+      var(--dsg-tint) calc(var(--dsg-floor-l3) * 100%),
+      color-mix(in srgb, var(--dsg-tint) calc(var(--dsg-a3) * 100%), transparent) calc((1 - var(--dsg-floor-l3)) * 100%));
 
   /* frost */
   --dsg-backdrop-l1: blur(var(--dsg-blur-l1)) saturate(var(--dsg-sat)) brightness(var(--dsg-bright)) contrast(var(--dsg-contrast));
   --dsg-backdrop-l2: blur(var(--dsg-blur-l2)) saturate(var(--dsg-sat)) brightness(var(--dsg-bright)) contrast(var(--dsg-contrast));
   --dsg-backdrop-l3: blur(var(--dsg-blur-l3)) saturate(var(--dsg-sat)) brightness(var(--dsg-bright)) contrast(var(--dsg-contrast));
+  --dsg-backdrop-dialog: blur(var(--dsg-blur-dialog)) saturate(var(--dsg-sat)) brightness(var(--dsg-bright)) contrast(var(--dsg-contrast));
+  --dsg-backdrop-menu: blur(var(--dsg-blur-menu)) saturate(1.4);
   --dsg-backdrop-panel: blur(calc(10px * var(--dsg-blur, 1))) saturate(1.2) brightness(var(--dsg-bright));
 
   /* specular sheen */
@@ -246,11 +255,11 @@ html[data-dsg='on'] body {
   --dsw-elevation-prominent: var(--dsw-elevation-stroke), 0 10px 34px rgba(44, 74, 140, 0.12), 0 0 30px rgba(44, 74, 140, 0.06);
   --dsw-elevation-soft: var(--dsw-elevation-stroke), 0 8px 28px rgba(44, 74, 140, 0.08), 0 0 28px rgba(44, 74, 140, 0.05);
 
-  /* ink: slightly deeper than native for glass contrast */
-  --dsw-alias-label-primary: #1c2532;
-  --dsw-alias-label-secondary: #4b5a6e;
-  --dsw-alias-label-tertiary: #6e7c8f;
-  --dsw-alias-label-caption: #8a97a8;
+  /* ink: deeper ramp for readable text over glass (≥4.9:1) */
+  --dsw-alias-label-primary: #101728;
+  --dsw-alias-label-secondary: #333c4d;
+  --dsw-alias-label-tertiary: #5c6472;
+  --dsw-alias-label-caption: #626a78;
 }
 
 /* ---- glass engine · dark ------------------------------------------------- */
@@ -335,7 +344,38 @@ html[data-dsg='on'] ::-webkit-scrollbar-thumb:hover {
   background: rgba(77, 107, 254, 0.38) !important;
 }
 
-/* ---- no-backdrop-filter fallback (syntax leg) ---------------------------- */
+/* ---- runtime fallback: software rasteriser (syntax OK, frost missing) ---- */
+html[data-dsg='on'] body[data-dsg-fallback] {
+  --dsg-fill-l1: rgba(250, 252, 255, 0.92);
+  --dsg-fill-l2: rgba(252, 253, 255, 0.95);
+  --dsg-fill-l3: rgba(255, 255, 255, 0.97);
+  --dsg-backdrop-l1: none;
+  --dsg-backdrop-l2: none;
+  --dsg-backdrop-l3: none;
+  --dsg-backdrop-panel: none;
+  --dsw-menu-backdrop-filter: none;
+  --dsw-mask-blur: none;
+  --dsg-sheen-l1: none;
+  --dsg-sheen-l2: none;
+  --dsg-sheen-l3: none;
+}
+html[data-dsg='on'] body[data-ds-dark-theme][data-dsg-fallback] {
+  --dsg-fill-l1: rgba(13, 21, 36, 0.93);
+  --dsg-fill-l2: rgba(16, 26, 44, 0.96);
+  --dsg-fill-l3: rgba(18, 29, 49, 0.98);
+}
+
+/* ---- reduced motion ------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  html[data-dsg='on'] .dsg-atmosphere .dsg-aurora {
+    animation: none !important;
+  }
+  html[data-dsg='on'] * {
+    transition-duration: 1ms !important;
+    animation-duration: 1ms !important;
+  }
+}
+
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   html[data-dsg='on'] body {
     --dsg-fill-l1: rgba(250, 252, 255, 0.9);

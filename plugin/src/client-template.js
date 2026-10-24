@@ -100,6 +100,25 @@ window.__ModuleLoader__.load({
       applyVars(c)
     }
 
+    // Software rasterisers accept backdrop-filter syntax but paint no frost.
+    // Detect once and pin the fallback material (near-opaque, no blur).
+    function detectGlassFallback() {
+      try {
+        var canvas = document.createElement('canvas')
+        var gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl')
+        if (!gl) { document.body.setAttribute('data-dsg-fallback', '1'); return }
+        var ext = gl.getExtension('WEBGL_debug_renderer_info')
+        var renderer = ext
+          ? String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) || '')
+          : String(gl.getParameter(gl.RENDERER) || '')
+        var lose = gl.getExtension('WEBGL_lose_context')
+        if (lose) lose.loseContext()
+        if (/swiftshader|software|llvmpipe|softpipe|microsoft basic render|stack-gl/i.test(renderer)) {
+          document.body.setAttribute('data-dsg-fallback', '1')
+        }
+      } catch (e) { /* keep the frost */ }
+    }
+
     // Color mode is owned by DSH's native theme service; this plugin only
     // selects a mode on first activation (the reference look is the airy light
     // palette) and then mirrors whatever the native Appearance setting says.
@@ -207,7 +226,7 @@ window.__ModuleLoader__.load({
     // ---- dev-only DOM snapshot (removed before delivery) --------------------
     // Writes a JSON snapshot of the live shell to the clipboard once per
     // DUMP_VERSION so the build loop can inspect real DOM classes/attributes.
-    var DUMP_VERSION = 'v4'
+    var DUMP_VERSION = 'v6'
     function dumpDom() {
       try {
         if (window.sessionStorage.getItem('dsg-dom-dump') === DUMP_VERSION) return
@@ -301,9 +320,64 @@ window.__ModuleLoader__.load({
       }, 4000)
     }
 
+    // ---- dev-only settings opener (removed before delivery) -----------------
+    // Opens the native settings dialog through the real account menu so the
+    // DOM dump and screenshots can cover settings/plugin/detail surfaces.
+    function devOpenSettings() {
+      try {
+        if (window.sessionStorage.getItem('dsg-dev-settings') === 'v2') return
+        window.sessionStorage.setItem('dsg-dev-settings', 'v2')
+      } catch (e) { return }
+      window.setTimeout(function () {
+        // If the settings dialog is already open, jump to our own section.
+        var dialog = document.querySelector('[role="dialog"]')
+        if (dialog) {
+          var items = [].slice.call(dialog.querySelectorAll('button, a, [role="menuitem"], [role="tab"]'))
+          for (var i = 0; i < items.length; i++) {
+            if (/外观 · DeepSeek|DeepSeek glass/i.test(items[i].textContent || '')) { items[i].click(); return }
+          }
+          return
+        }
+        var launcher = document.querySelector('[data-slot="settings.launcher"] button')
+        if (launcher) launcher.click()
+        window.setTimeout(function () {
+          var nodes = [].slice.call(document.querySelectorAll('[role="menuitem"], button, a'))
+          var target = null
+          for (var j = 0; j < nodes.length; j++) {
+            var el = nodes[j]
+            if (el.closest('[role="dialog"]')) continue
+            var label = (el.getAttribute('aria-label') || '') + ' ' + (el.textContent || '')
+            if (/设置|Settings/.test(label)) { target = el; break }
+          }
+          if (target) target.click()
+        }, 700)
+      }, 3000)
+    }
+
+    // ---- dev-only settings closer (removed before delivery) -----------------
+    function devCloseSettings() {
+      try {
+        if (window.sessionStorage.getItem('dsg-dev-close') === 'v1') return
+        window.sessionStorage.setItem('dsg-dev-close', 'v1')
+      } catch (e) { return }
+      window.setTimeout(function () {
+        var dlg = document.querySelector('[role="dialog"]')
+        if (!dlg) return
+        var buttons = [].slice.call(dlg.querySelectorAll('button'))
+        for (var i = 0; i < buttons.length; i++) {
+          var label = (buttons[i].getAttribute('aria-label') || '') + ' ' + (buttons[i].title || '')
+          if (/关闭|Close/i.test(label)) { buttons[i].click(); return }
+        }
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }))
+      }, 2500)
+    }
+
     function apply(ctx) {
       ctxRef = ctx
       dumpDom()
+      devOpenSettings()
+      devCloseSettings()
+      detectGlassFallback()
 
       // 0. first activation: adopt the DeepSeek-web light palette once. Later
       // changes made in DSH's native Appearance settings are left alone.
