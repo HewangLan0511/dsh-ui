@@ -655,3 +655,26 @@ node tools/release.mjs
 - 顺序持久化在浏览器 localStorage，换机器 / 换 profile 不跟随；要重置删
   `dsh-skin-mistblue/panel-order` 即可。
 - 面板列表新增 / 移除插件时会按已保存的标签顺序尽量排列，新面板排在末尾再归一化。
+
+
+---
+
+## 20. 四项体验修复（2026-10-24 第十五轮，`v1.15-ui` / `1.0.3`）
+
+1. **设置页配色**：根因是三重的——`currentColor()` 读不存在的 `snapshot.id` 恒回退 light；
+   设置面板只 `setConfig` 同一个引用导致 React bail out、点了不重渲染；首次激活强写
+   `light` 覆盖用户原生 Appearance。修法：读 `getTheme().preference`、配色改 React state、
+   `ctx.on('theme/change')` → `emit()`、删掉首激活强写与 localStorage 镜像。
+2. **MCP 页顶部白块 / 黄边**：MCP 市场页在宿主同源 iframe `/mcp-connector/ui/` 内，
+   主文档 CSS 无法跨文档；iframe 自带 `#dsh-theme-bridge` 会把父页面 body 的
+   `--dsw-alias-*` 抄进 iframe :root。于是只在 `:has(.mcpConnectorMarketPanel)` 期间改
+   `--dsw-alias-bg-overlay`（白→蓝白玻璃）与 `--dsw-alias-state-warn-primary`
+   （amber→石板蓝灰），面板自身 ::before 磨砂底层固定。
+   注意：该桥是本机热补丁，宿主升级 dsh-mcp-connector 后规则可能失效（无副作用）。
+3. **竖线虚影**：`22-drag-smooth.css` 的全高列 `will-change: width` 让列成为独立合成层，
+   层边缘在非整数 DPR 下漏出 1px 背景；叠加 width/transform 过渡后 0.5px 发丝边逐帧
+   亚像素重绘 → 虚线感。删除 will-change 与几何过渡；可选宽度追赶只在
+   `data-dsg-dragging-divider` 下启用（只过渡 width、无 transform）。
+4. **选字误触发**：`initResizeGuard` 原先任意 pointer 拖动 >4px 就置 `data-dsg-resizing`，
+   选字也会降级材质；改为只在命中 `[data-dockkit-divider]` 或
+   `getComputedStyle(...).cursor` 含 resize 的手柄时立即置位，并同步打分隔条标记。

@@ -1,5 +1,5 @@
 /* ============================================================================
-   dsh-skin-mistblue · 22 drag smooth (v1.12)
+   dsh-skin-mistblue · 22 drag smooth (v1.13)
    ----------------------------------------------------------------------------
    Splitter drags drive pane width with a React state update per pointermove; the
    dockkit shell also keeps `transition: transform var(--ds-transition-duration-slow)`
@@ -7,13 +7,42 @@
    early/late. Instead of fighting the host's pointer stream we keep the pointer
    behaviour untouched and simply:
      · start the expensive-material fallback on pointerdown (see client guard),
-     · replace the shell's slow transform transition with a short *linear width
-       chase* — the split follows the cursor through a 90ms linear interpolation,
-       so a fast flick can never teleport the layout in one frame, while slow
-       drags still feel 1:1,
+     · stop *all* geometry animation on the moving full-height columns for the
+       duration of any pointer drag — each per-pointermove state update already
+       lands on the pointer, so a 1:1 follow can never teleport the layout and
+       does not need an interpolation layer,
+     · (opt-in) on a *real* splitter drag re-arm a short linear width chase,
      · drop scroll anchoring so reflow never scroll-compensates mid-drag.
+
+   v1.13 — why the old `will-change: width` + width/transform transition is gone
+   (`div:has(> [data-slot='sidebar'])` and `[data-sidebar-right-panel]` are
+   full-window-height columns; the sidebar column paints its right edge as a
+   0.5px hairline + inset sheen, the panel its left edge as inset hairlines):
+     1. `will-change: width` tells the compositor to pre-promote such a
+        full-height column into its own rasterised layer. The column's painted
+        edge then becomes the edge of that layer; the compositor snaps layer
+        edges to whole device pixels, so on fractional DPR (125% / 150%) a
+        ~1 device-px strip of the atmosphere/backdrop shows through the column
+        edge → the faint vertical seam.
+     2. A `width` and `transform` transition then keeps moving that layer
+        boundary over fractional device-pixel offsets every frame, and the
+        0.5px hairline is repainted at alternating sub-pixel offsets → the seam
+        reads as a dashed/dotted ghost line instead of a clean edge.
+     3. It only exists while `data-dsg-resizing` is set, because those are the
+        only frames where the layer/transition is armed — exactly the reported
+        symptom (line appears during drag / text selection, vanishes on release).
+     4. Text selection reproduces it because the client guard arms on ANY 4px
+        pointer drag, not only on splitters. During selection the column width
+        never changes, so the *only* rule with a visual effect there was
+        `will-change` — removing it alone kills the seam for selection.
+   Keeping the column out of its own layer (no will-change, no transform/width
+   transition on the generic path) means its edge is painted in the same layer
+   as the parent/backdrop, i.e. the parent always paints underneath it, so a
+   fractional pixel can never expose a gap. See rules 2 and 3.
    ========================================================================== */
 
+/* ---- 1. 拖动期间：dockkit 每个壳层的高成本过渡/动画一律停 ------------------
+   （过渡本身不合成，安全；这里只是别让壳层动画继续逐帧重排。） */
 html[data-dsg='on'][data-dsg-resizing] [data-dockkit-host],
 html[data-dsg='on'][data-dsg-resizing] [data-dockkit-empty],
 html[data-dsg='on'][data-dsg-resizing] [data-dockkit-divider],
@@ -25,20 +54,44 @@ html[data-dsg='on'][data-dsg-resizing] [data-dockkit-surface] {
   animation: none !important;
 }
 
-/* the moving edges chase the pointer with a bounded, linear follow */
+/* ---- 2. 全高列：任何拖动（含误触的文字选择）期间禁止几何过渡与合成提升 ----
+   · transition: none → 列宽（以及任何 transform）不再被插值，边缘只在布局
+     真正变化时移动，拖动/选择期间不会出现「亚像素边缘逐帧重绘」的虚线；
+   · will-change: auto !important → 同时压掉宿主行内写在列上的 will-change
+     （行内普通声明压不过带 !important 的作者样式），确保列不会被预先提升成
+     独立合成层，从而没有可被吸附的层边缘 = 不会漏出 1px 接缝；
+   · `[data-slot='sidebar']` 本身是 display:contents 锚点（无盒子，见
+     20-sidebar.css），对它写 transition/will-change 没有任何效果，故移出选择器。 */
 html[data-dsg='on'][data-dsg-resizing] [data-sidebar-right-panel],
-html[data-dsg='on'][data-dsg-resizing] div:has(> [data-slot='sidebar']),
-html[data-dsg='on'][data-dsg-resizing] [data-slot='sidebar'] {
-  transition: width 90ms linear, transform 90ms linear !important;
-  will-change: width;
+html[data-dsg='on'][data-dsg-resizing] div:has(> [data-slot='sidebar']) {
+  transition: none !important;
+  will-change: auto !important;
 }
 
+/* ---- 3. 真·拖动分隔条：可选的有界线性跟随（需要 client 打标） --------------
+   默认（属性不存在）就是规则 2 的 1:1 跟随；只有 client 在确实按住分隔条
+   （pointerdown 命中 `[data-dockkit-divider]`）时同时打上
+   html[data-dsg-dragging-divider]，拖动结束（pointerup/cancel/blur）移除，
+   才启用这段 90ms 的宽度追赶。
+   安全边界：这里只过渡 width——
+     · 不做 transform 过渡：transform 过渡会把整列抬成合成层，正是接缝成因；
+     · 不加 will-change：列留在父级 paint layer 里，宽度动画走布局+重绘，
+       列边缘与父级/背景同层连续绘制，没有可被设备像素吸附的层边缘。
+   若实机验收不需要这段追赶，保持属性不设置即可（规则 2 已是完整修复）。 */
+html[data-dsg='on'][data-dsg-resizing][data-dsg-dragging-divider] [data-sidebar-right-panel]:not([aria-hidden='true']),
+html[data-dsg='on'][data-dsg-resizing][data-dsg-dragging-divider] div:has(> [data-slot='sidebar']) {
+  transition: width 90ms linear !important;
+  will-change: auto !important;
+}
+
+/* ---- 4. 拖动时取消滚动锚定，避免 reflow 触发滚动补偿 ----------------------- */
 html[data-dsg='on'][data-dsg-resizing] [data-conversation-region='chat'],
 html[data-dsg='on'][data-dsg-resizing] [data-chat-flow] {
   overflow-anchor: none;
   scroll-behavior: auto;
 }
 
+/* ---- 5. 分隔条命中区：col-resize 光标 + 禁止触摸滚动 ----------------------- */
 html[data-dsg='on'][data-dsg-resizing] [data-dockkit-divider] {
   cursor: col-resize;
   touch-action: none;

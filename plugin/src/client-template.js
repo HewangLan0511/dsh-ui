@@ -133,26 +133,51 @@ window.__ModuleLoader__.load({
       } catch (e) { /* keep the frost */ }
     }
 
-    // Color mode is owned by DSH's native theme service; this plugin only
-    // selects a mode on first activation (the reference look is the airy light
-    // palette) and then mirrors whatever the native Appearance setting says.
+    // Color mode is owned by DSH's native theme service (`ui-theme` provides
+    // `ctx.theme`). `getTheme()` returns an immutable snapshot:
+    //   { preference: 'light'|'dark'|'system'|<theme id>, active, themes, ... }
+    // The settings row must follow `preference` — the persisted choice, exactly
+    // like DSH's own Appearance cubes — not the resolved `active.colorScheme`
+    // (with `system` those differ). There is no `snapshot.id`: an earlier build
+    // read that field, always got `undefined`, and therefore always highlighted
+    // "浅色". Never keep a local copy as the truth either: the theme service owns
+    // persistence, and its `theme/change` event keeps this row in lockstep with
+    // DSH's native Appearance settings.
     function themeService(ctx) {
-      try { return ctx.get('theme') } catch (e) { return null }
+      try {
+        var theme = ctx && ctx.get ? ctx.get('theme') : null
+        if (theme) return theme
+      } catch (e) { /* non-fatal */ }
+      try { return ctx && ctx.theme ? ctx.theme : null } catch (e) { return null }
+    }
+    function isColorMode(v) {
+      return v === 'light' || v === 'dark' || v === 'system'
     }
     function currentColor(theme) {
       try {
-        var snap = theme && theme.getTheme && theme.getTheme()
-        return snap && snap.id ? snap.id : 'light'
-      } catch (e) { return 'light' }
+        var snap = theme && theme.getTheme ? theme.getTheme() : null
+        if (snap && typeof snap.preference === 'string' && snap.preference) return snap.preference
+        // defensive: very old snapshots only exposed the resolved palette
+        if (snap && snap.active && (snap.active.colorScheme === 'light' || snap.active.colorScheme === 'dark')) {
+          return snap.active.colorScheme
+        }
+      } catch (e) { /* non-fatal */ }
+      try {
+        var source = typeof document !== 'undefined' && document.documentElement
+          ? document.documentElement.getAttribute('data-ds-theme-source')
+          : null
+        if (isColorMode(source)) return source
+      } catch (e) { /* non-fatal */ }
+      return 'system' // DSH's own default preference
     }
     function setColor(ctx, id) {
+      if (!isColorMode(id)) return
       var theme = themeService(ctx)
-      if (!theme || !theme.setTheme) return
-      try { theme.setTheme(id) } catch (e) { /* non-fatal */ }
       try {
-        window.localStorage.setItem(COLOR_KEY, id)
-        window.localStorage.removeItem(LEGACY_COLOR_KEY)
+        if (theme && typeof theme.setTheme === 'function') theme.setTheme(id)
       } catch (e) { /* non-fatal */ }
+      // emit() re-renders the settings row right away; the service also emits
+      // `theme/change`, which covers DSH's native Appearance controls.
       emit()
     }
 
@@ -216,8 +241,18 @@ window.__ModuleLoader__.load({
       var cfgState = useState(state.config || DEFAULTS)
       var config = cfgState[0]
       var setConfig = cfgState[1]
+      // Color mode is read from the theme service on mount and refreshed on every
+      // change (plugin click, DSH native Appearance, OS scheme flip). A plain
+      // render-time read was not enough: `setColor` changed no plugin config, so
+      // React never re-rendered and the highlight stayed on the old option.
+      var colorState = useState(function () { return currentColor(themeService(ctxRef)) })
+      var color = colorState[0]
+      var setColorMode = colorState[1]
       useEffect(function () {
-        return subscribe(function () { setConfig(state.config || DEFAULTS) })
+        return subscribe(function () {
+          setConfig(state.config || DEFAULTS)
+          setColorMode(currentColor(themeService(ctxRef)))
+        })
       }, [])
       return h('div', { className: 'dsg-settings' }, [
         h('div', { className: 'dsg-settings-head', key: 'head' }, [
@@ -226,11 +261,11 @@ window.__ModuleLoader__.load({
         ]),
         h('div', { className: 'dsg-settings-body', key: 'body' }, [
           h(Row, { key: 'color', label: T('配色', 'Color mode'), hint: T('浅色为 DeepSeek 网页端基准；深色为同构夜航玻璃', 'Light matches the DeepSeek web reference; dark is the same glass at night') }, h('div', { className: 'dsg-seg' }, ['light', 'dark', 'system'].map(function (v) {
-            var theme = ctxRef ? themeService(ctxRef) : null
-            var active = (theme && currentColor(theme) === v)
+            var active = (color === v)
             return h('button', {
               key: v,
               type: 'button',
+              'aria-pressed': active,
               className: 'dsg-seg-btn' + (active ? ' is-on' : ''),
               onClick: function () { setColor(ctxRef, v) }
             }, v === 'light' ? T('浅色', 'Light') : v === 'dark' ? T('深色', 'Dark') : T('跟随系统', 'System'))
@@ -314,40 +349,51 @@ window.__ModuleLoader__.load({
         var was = active
         armed = false
         active = false
-        if (was) html.removeAttribute('data-dsg-resizing')
-        window.removeEventListener('pointermove', onMove, true)
+        startX = 0
+        startY = 0
+        if (was) {
+          html.removeAttribute('data-dsg-resizing')
+          html.removeAttribute('data-dsg-dragging-divider')
+        }
         window.removeEventListener('pointerup', clear, true)
         window.removeEventListener('pointercancel', clear, true)
         window.removeEventListener('blur', clear, true)
       }
-      function onMove(e) {
-        if (!armed || active) return
-        var dx = e.clientX - startX
-        var dy = e.clientY - startY
-        if (dx * dx + dy * dy < 16) return // ~4px: clicks never trigger, drags do
-        active = true
-        html.setAttribute('data-dsg-resizing', '1')
-        window.removeEventListener('pointermove', onMove, true)
-        timer = window.setTimeout(clear, 15000) // safety net
+      // Only a press that actually landed on a splitter / resize handle arms the
+      // guard. Earlier builds armed on ANY pointer press and activated after 4px of
+      // movement, so selecting text in the composer flipped `data-dsg-resizing` and
+      // repainted every full-height column — one source of the vertical ghost seam.
+      function resizeTarget(target) {
+        if (!target || target.nodeType !== 1) return null
+        var divider = target.closest ? target.closest('[data-dockkit-divider]') : null
+        if (divider) return divider
+        var el = target
+        var depth = 0
+        while (el && el !== document.body && depth < 6) {
+          try {
+            var cursor = window.getComputedStyle(el).cursor || ''
+            if (cursor.indexOf('resize') >= 0) return el
+          } catch (e) { /* non-fatal */ }
+          el = el.parentElement
+          depth++
+        }
+        return null
       }
       function onDown(e) {
         if (e.button !== 0) return
+        var handle = resizeTarget(e.target)
+        if (!handle) return
         clear()
         armed = true
         startX = e.clientX
         startY = e.clientY
         // A splitter press IS a resize drag from the first frame: drop the frosted
-        // materials immediately instead of waiting for the 4px threshold, otherwise
-        // the first frames of every drag still pay for the full glass stack.
-        var target = e.target
-        var divider = target && target.closest ? target.closest('[data-dockkit-divider]') : null
-        if (divider) {
-          active = true
-          html.setAttribute('data-dsg-resizing', '1')
-          timer = window.setTimeout(clear, 15000)
-        } else {
-          window.addEventListener('pointermove', onMove, true)
-        }
+        // materials immediately instead of waiting for a movement threshold.
+        active = true
+        html.setAttribute('data-dsg-resizing', '1')
+        var divider = handle.closest ? handle.closest('[data-dockkit-divider]') : null
+        if (divider) html.setAttribute('data-dsg-dragging-divider', '1')
+        timer = window.setTimeout(clear, 15000)
         window.addEventListener('pointerup', clear, true)
         window.addEventListener('pointercancel', clear, true)
         window.addEventListener('blur', clear, true)
@@ -648,11 +694,33 @@ window.__ModuleLoader__.load({
         }, 'dsh-skin-mistblue: locale labels')
       } catch (e) { /* non-fatal */ }
 
-      // 0. first activation: adopt the DeepSeek-web light palette once. Later
-      // changes made in DSH's native Appearance settings are left alone.
+      // DSH's native theme service is the single source of truth for color mode.
+      // Re-render the settings row whenever it publishes, so the plugin's own
+      // toggle, DSH's Appearance controls, and an OS scheme flip while the
+      // preference is `system` all move the highlight immediately.
       try {
-        var stored = readItem(COLOR_KEY, LEGACY_COLOR_KEY)
-        if (!stored) setColor(ctx, 'light')
+        ctx.effect(function () {
+          var off = null
+          var handler = function () { emit() }
+          try { off = ctx.on('theme/change', handler) } catch (e) { /* non-fatal */ }
+          return function () {
+            try {
+              if (typeof off === 'function') off()
+              else if (ctx.off) ctx.off('theme/change', handler)
+            } catch (e) { /* non-fatal */ }
+          }
+        }, 'dsh-skin-mistblue: theme labels')
+      } catch (e) { /* non-fatal */ }
+
+      // 0. Color mode belongs to DSH's native theme service: this plugin never
+      // writes a preference on activation. An earlier build forced `light` once,
+      // which overwrote the user's own Appearance choice (the "fight" that made
+      // a dark selection appear to revert), and kept a localStorage mirror that
+      // could resurrect a stale mode. Drop that mirror — the theme service
+      // already persists the user's selection.
+      try {
+        window.localStorage.removeItem(COLOR_KEY)
+        window.localStorage.removeItem(LEGACY_COLOR_KEY)
       } catch (e) { /* non-fatal */ }
 
       // 1. global stylesheet, owned by this plugin (removed on unload/HMR)

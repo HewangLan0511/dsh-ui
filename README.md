@@ -10,7 +10,7 @@ DeepSeek Harness（DSH）的玻璃质感皮肤：以 DeepSeek 网页端（deepse
 雾蓝渐变氛围背景 + 分层柔光玻璃，弹窗 / 显示卡 / 详情卡按可读性分级加雾，
 浅色与深色同构，设置页中英双语并跟随 DSH locale。
 
-**版本 `1.0.2` · MIT · 已发布 npm：[`dsh-skin-mistblue`](https://www.npmjs.com/package/dsh-skin-mistblue)**
+**版本 `1.0.3` · MIT · 已发布 npm：[`dsh-skin-mistblue`](https://www.npmjs.com/package/dsh-skin-mistblue)**
 
 ![Hero](docs/assets/final/hero.png)
 
@@ -147,6 +147,7 @@ git checkout baseline-v0 -- .        # 回到施工前快照
 中文设置、改名雾蓝、收起态标题栏、tooltip 玻璃化、文档预览纸面、拖动流畅化）。
 `1.0.1` — 左侧面板列表拖动换位 + 二次点击返回（第十三轮，`v1.13-ui`）。
 `1.0.2` — 拖动换位改用原生 HTML5 DnD，修复实机拖不动/异位（第十四轮，`v1.14-ui`）。
+`1.0.3` — 设置配色切换、MCP 页顶部白块/推荐卡黄边、拖动与选字时的竖线虚影（第十五轮，`v1.15-ui`）。
 逐版本说明见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## License

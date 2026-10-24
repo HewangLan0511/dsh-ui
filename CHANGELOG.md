@@ -3,6 +3,28 @@
 本项目的版本分两套：`vX.Y-ui` 是界面迭代里程碑（git tag），`1.x` 是插件对外的发布版本。
 插件版本在 `plugin/package.json`；界面里程碑与发布版本的关系如下。
 
+## 1.0.3 — 2026-10-24
+
+四项体验修复（纯客户端，不改宿主）：
+
+- **设置页主题切换**：配色高亮此前读 `snapshot.id`（并不存在）→ 恒为「浅色」；改为读
+  `theme.getTheme().preference`，设置行加 React state 并在 `emit()` / `theme/change`
+  时刷新；首次激活不再强写 `light`、不再用 localStorage 与 DSH 原生 Appearance 打架。
+- **MCP 连接器页顶部白块**：页面本体在宿主同源 iframe 里，主文档 CSS 进不去；利用 iframe
+  自带的 `#dsh-theme-bridge`（首帧抄父页面 body 的 `--dsw-alias-*`），在
+  `:has(.mcpConnectorMarketPanel)` 期间把 `--dsw-alias-bg-overlay` 改成蓝白玻璃，
+  顶部不再是一条纯白板。
+- **MCP「推荐」卡片黄边**：同一桥把 `--dsw-alias-state-warn-primary`（iframe 的 `--warn`）
+  从 amber 改成蓝灰 `#64748b`（深色 `#9aa8c2`），与其它卡片发丝边同色系；面板自身磨砂底固定。
+- **竖线虚影**：`22-drag-smooth.css` 删掉全高列的 `will-change: width` 与
+  width/transform 过渡（合成层边缘在 125%/150% 缩放下漏 1px 背景 → 竖缝）；
+  `initResizeGuard` 改为只在命中分隔条/光标为 resize 的手柄时才置
+  `data-dsg-resizing`（选字不再误触发材质降级），并在真拖分隔条时打
+  `data-dsg-dragging-divider` 供可选的宽度追赶。
+- 发布：`dsh-skin-mistblue@1.0.3`（tag `v1.15-ui`）。
+
+## v1.15-ui — 主题切换 / MCP 页面融合 / 竖线虚影
+
 ## 1.0.2 — 2026-10-24
 
 拖动换位改用 **HTML5 原生 drag & drop**（1.0.1 的 pointer 事件方案在宿主

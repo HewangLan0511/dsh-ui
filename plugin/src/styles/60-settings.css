@@ -477,3 +477,56 @@ html[data-dsg='on'] [data-plan-preview] {
   border-radius: var(--dsg-radius-modal);
   box-shadow: var(--dsg-bevel-l2);
 }
+
+/* ============================================================================
+   6. MCP 连接器页面（profile 插件 dsh-mcp-connector）
+      — 顶部白块融合 + 「推荐」卡片黄边去色
+   ----------------------------------------------------------------------------
+   结构（源码证据见报告）：
+     · 主文档里是 `.mcpConnectorMarketPanel`（panel 模式 role=region，
+       dialog 模式 role=dialog），内容装在同源 iframe `/mcp-connector/ui/` 里。
+     · iframe 页面只有它自己的 <style>，主文档 CSS 不能跨文档命中它的 DOM，
+       所以这里不能直接写 `header {}` / `.card.featured {}`。
+     · 唯一 CSS-only 通道：该 iframe 页面里有一段宿主主题桥
+       (`<script id="dsh-theme-bridge">`，dsh-host-theme-compat 注入)，它在
+       首帧把父页面 body 上**计算后**的 --dsw-alias-* 令牌抄进 iframe :root。
+       因此只要在「MCP 面板存在时」改写父页面 body 上的两个令牌，
+       iframe 内就会跟着变：
+         --dsw-alias-bg-overlay  → iframe --surface-overlay
+            → header / .detail-header / .modal .m-actions 的背景。
+            原来它 = L3(0.97 白) —— 就是页顶那条生硬白块；改成蓝白半透玻璃。
+         --dsw-alias-state-warn-primary → iframe --warn
+            → .card.featured 的描边（原来 #fbbf24 琥珀黄）；改成蓝灰，
+            与其它卡片的 --line 发丝边同一色系。
+   作用域：:has(.mcpConnectorMarketPanel) 只在 MCP 页挂载期间成立。DSH 的
+   MainPanel 只渲染当前选中的 main 条目，面板卸载/切走后面板节点消失，两个令牌
+   立刻恢复原值，不影响对话页、设置页等其它页面。
+   降级：宿主升级若把 iframe 里的 dsh-theme-compat 桥去掉，iframe 会回落到它
+   自带的浅色调色板，本段规则自然不生效（无副作用）。
+   ========================================================================== */
+
+/* 顶部白块 → 蓝白玻璃（iframe 用 --surface-overlay 画 header 背景） */
+html[data-dsg='on']:has(.mcpConnectorMarketPanel) body {
+  --dsw-alias-bg-overlay: rgba(240, 245, 255, 0.66);
+}
+html[data-dsg='on']:has(.mcpConnectorMarketPanel) body[data-ds-dark-theme] {
+  --dsw-alias-bg-overlay: rgba(24, 35, 56, 0.62);
+}
+
+/* 「推荐」卡片黄边 → 中性蓝灰（iframe 的 .card.featured 用 var(--warn) 描边）
+   同一个 --warn 还用于 iframe 内的「去配置/授权」警告按钮文字，所以取可读的
+   石板蓝（#64748b 在白底上 ≈4.8:1），而不是极淡的 hairline 值，避免按钮文字
+   发虚。 */
+html[data-dsg='on']:has(.mcpConnectorMarketPanel) body {
+  --dsw-alias-state-warn-primary: #64748b;
+}
+html[data-dsg='on']:has(.mcpConnectorMarketPanel) body[data-ds-dark-theme] {
+  --dsw-alias-state-warn-primary: #9aa8c2;
+}
+
+/* 把面板自身的磨砂底钉回原来的配方：上面的 --dsw-alias-bg-overlay 覆盖是给
+   iframe 用的，如果不钉住，dialog 模式的面板 ::before 会跟着变透。
+   （panel 模式 role=region 的 ::before 本来就是 display:none。） */
+html[data-dsg='on'] .mcpConnectorMarketPanel::before {
+  background-color: color-mix(in srgb, var(--dsg-fill-l3) 72%, transparent);
+}

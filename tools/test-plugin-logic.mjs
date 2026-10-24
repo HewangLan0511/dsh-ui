@@ -66,23 +66,26 @@ function check(label, ok) {
   if (!ok) failures++
 }
 
-// 1. click (no movement) must not trigger
+// 1. only a real splitter / resize-handle press arms the guard
 {
   const env = makeEnv()
   const disposers = []
   const ctx = { effect: (fn) => { disposers.push(fn()) } }
   const { initResizeGuard } = build(guardSource, ['initResizeGuard'], { window: env.win, document: env.doc, ctx })
+  const divider = { nodeType: 1 }
+  divider.closest = (sel) => (sel === '[data-dockkit-divider]' ? divider : null)
+  const plain = { nodeType: 1, closest: () => null, parentElement: null }
   initResizeGuard(ctx)
-  env.fire('pointerdown', { button: 0, clientX: 100, clientY: 100 })
-  env.fire('pointermove', { clientX: 102, clientY: 101 })
-  check('small jitter (<4px) does not arm the guard', !env.attrs.has('data-dsg-resizing'))
+  env.fire('pointerdown', { button: 0, clientX: 100, clientY: 100, target: plain })
+  env.fire('pointermove', { clientX: 140, clientY: 100 })
+  check('plain press + drag (text selection) never arms the guard', !env.attrs.has('data-dsg-resizing'))
   env.fire('pointerup', {})
   check('pointerup keeps it clean', !env.attrs.has('data-dsg-resizing'))
-  env.fire('pointerdown', { button: 0, clientX: 100, clientY: 100 })
-  env.fire('pointermove', { clientX: 140, clientY: 100 })
-  check('real drag arms the guard (attribute set)', env.attrs.get('data-dsg-resizing') === '1')
+  env.fire('pointerdown', { button: 0, clientX: 100, clientY: 100, target: divider })
+  check('divider press arms immediately (attribute set)', env.attrs.get('data-dsg-resizing') === '1')
+  check('divider press marks the drag as a divider drag', env.attrs.get('data-dsg-dragging-divider') === '1')
   env.fire('pointerup', {})
-  check('pointerup removes the attribute', !env.attrs.has('data-dsg-resizing'))
+  check('pointerup removes the attributes', !env.attrs.has('data-dsg-resizing') && !env.attrs.has('data-dsg-dragging-divider'))
   disposers.forEach((d) => d && d())
   check('disposer clears the attribute and listener', !env.attrs.has('data-dsg-resizing') && (env.listeners.get('pointerdown') || []).length === 0)
 }
