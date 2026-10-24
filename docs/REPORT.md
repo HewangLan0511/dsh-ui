@@ -726,3 +726,17 @@ click / keydown / :hover 都不受影响。
 验证：构建 13 CSS / 179.7 KiB；test 10/10 PASS；悬停 tab 行截图无弹层。
 
 发布后清理：GitHub 只保留最新 Release `v1.0.5`，v1.0.0–v1.0.4 的 Release 已删除。
+
+
+---
+
+## 23. tab tooltip 兜底隐藏（第十八轮，`v1.18-ui` / `1.0.6`）
+
+1.0.5 只在 document 捕获阶段拦 pointerover/mouseover/focusin，实机仍会弹同名气泡：
+宿主 Tooltip 通过 cloneElement 给 tab 注入 React onMouseEnter/onFocus，React 的组合
+事件在部分路径下仍能触发。
+
+1.0.6 加确定性兜底：MutationObserver 观察 body 子树新增节点，若出现
+`[role="tooltip"]`，且此刻有会话 tab 处于 hover/focus、气泡文本等于某 tab 文本，
+直接 `display:none`。只隐藏「与 tab 同名的气泡」，聊天里其它 tooltip 不受影响。
+事件拦截保留为第一道，tab 点击/键盘/:hover 均不经过这两个事件。

@@ -3,6 +3,19 @@
 本项目的版本分两套：`vX.Y-ui` 是界面迭代里程碑（git tag），`1.x` 是插件对外的发布版本。
 插件版本在 `plugin/package.json`；界面里程碑与发布版本的关系如下。
 
+## 1.0.6 — 2026-10-25
+
+- **会话 tab tooltip 彻底去掉**：1.0.5 只在 pointerover/mouseover/focusin 上
+  `stopImmediatePropagation`，但宿主 Tooltip 是 cloneElement 注入的 React
+  `onMouseEnter/onFocus`，部分组合事件路径下仍会弹层。本轮加确定性兜底：
+  MutationObserver 监听 body 子树，当 `[role="tooltip"]` 被挂载、且当前有
+  `[data-conversation-tabs] [role="tab"]` 处于 hover/focus、气泡文字等于某个 tab 文字时，
+  直接 `display:none` 掉这个重复气泡（只隐藏同名气泡，其它 tooltip 不受影响）。
+- 保留事件拦截作为第一道；tab 点击 / 键盘切换 / :hover 样式不变。
+- 发布：`dsh-skin-mistblue@1.0.6`（tag `v1.18-ui`）；GitHub 只保留最新 Release。
+
+## v1.18-ui — tab tooltip 兜底隐藏
+
 ## 1.0.5 — 2026-10-25
 
 - **去掉会话 tab 的重复 tooltip**：宿主给「对话 / 轨迹 / 上下文 / 画廊 / 编队」每个 tab 的

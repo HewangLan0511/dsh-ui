@@ -686,20 +686,63 @@ window.__ModuleLoader__.load({
       if (window.__dsgTabTooltipGuard) return
       window.__dsgTabTooltipGuard = true
       var TAB_SEL = '[data-conversation-tabs] [role="tab"]'
+      var pending = false
+
+      // Removing the trigger events alone is not enough: the host Tooltip clones
+      // its child with React onMouseEnter/onFocus handlers, and React synthesises
+      // those from root listeners that can still run in some composite-event
+      // paths. As a deterministic backstop, hide any tooltip bubble that is
+      // portaled to <body> while a conversation tab is hovered/focused AND the
+      // bubble text equals a tab label — the redundant duplicate only.
+      function hideDuplicateTabTip() {
+        pending = false
+        var hovered = document.querySelector(TAB_SEL + ':hover')
+        var focused = document.activeElement && document.activeElement.closest
+          ? document.activeElement.closest(TAB_SEL)
+          : null
+        if (!hovered && !focused) return
+        var labels = {}
+        var tabs = document.querySelectorAll(TAB_SEL)
+        for (var i = 0; i < tabs.length; i++) {
+          var label = (tabs[i].textContent || '').trim()
+          if (label) labels[label] = true
+        }
+        var tips = document.querySelectorAll('[role="tooltip"]')
+        for (var j = 0; j < tips.length; j++) {
+          var tip = tips[j]
+          var text = (tip.textContent || '').trim()
+          if (text && labels[text]) tip.style.display = 'none'
+        }
+      }
+      function scheduleHide() {
+        if (pending) return
+        pending = true
+        window.requestAnimationFrame(hideDuplicateTabTip)
+      }
       function onTrigger(e) {
         var target = e.target
         if (!target || target.nodeType !== 1 || !target.closest) return
-        if (target.closest(TAB_SEL)) e.stopImmediatePropagation()
+        if (target.closest(TAB_SEL)) {
+          scheduleHide()
+          e.stopImmediatePropagation()
+        }
       }
       document.addEventListener('pointerover', onTrigger, true)
       document.addEventListener('mouseover', onTrigger, true)
       document.addEventListener('focusin', onTrigger, true)
+      var observer = null
+      try {
+        observer = new MutationObserver(scheduleHide)
+        observer.observe(document.body, { childList: true, subtree: true })
+      } catch (e) { /* non-fatal */ }
+      scheduleHide()
       try {
         ctx.effect(function () {
           return function () {
             document.removeEventListener('pointerover', onTrigger, true)
             document.removeEventListener('mouseover', onTrigger, true)
             document.removeEventListener('focusin', onTrigger, true)
+            if (observer) observer.disconnect()
             window.__dsgTabTooltipGuard = false
           }
         }, 'dsh-skin-mistblue: tab tooltip guard')
