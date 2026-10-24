@@ -3,6 +3,14 @@
   "version": "1.0.0",
   "description": "Mistblue (雾蓝) — a DeepSeek-web inspired translucent glass skin for DeepSeek Harness: airy ambient background, liquid-glass surfaces, readability-tiered blur for cards, popups and detail panels.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HewangLan0511/dsh-ui.git"
+  },
+  "homepage": "https://github.com/HewangLan0511/dsh-ui#readme",
+  "bugs": {
+    "url": "https://github.com/HewangLan0511/dsh-ui/issues"
+  },
   "type": "module",
   "keywords": [
     "dsh",

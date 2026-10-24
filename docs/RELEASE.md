@@ -50,17 +50,20 @@ npm publish --access public
 
 ## 2. 上传 GitHub
 
-先在 GitHub 网页 **New repository** 建一个空仓库（不要勾 README / LICENSE / gitignore），
-假设地址为 `https://github.com/<你的账号>/dsh-ui.git`，然后：
+仓库已建好（私有）：`https://github.com/HewangLan0511/dsh-ui`。
+`plugin/package.json` 的 `repository` / `homepage` / `bugs` 已指向它；本地 remote 与推送：
 
 ```powershell
 cd C:\Users\baiyu\Desktop\dsh-ui
-git remote add origin https://github.com/<你的账号>/dsh-ui.git
+git remote add origin https://github.com/HewangLan0511/dsh-ui.git
 git push -u origin main
 git push --tags
 ```
 
-推完 tag 后创建 Release：
+> 想公开仓库时：GitHub → Settings → General → Danger Zone → Change visibility → Public。
+> 公开前请留意 `baseline/` 里有本机 profile 快照与界面截图。
+
+推送后创建 Release（也可用 API / `gh release create`）：
 
 1. GitHub → Releases → Draft a new release → tag `v1.0.0`；
 2. 标题：`dsh-skin-mistblue 1.0.0 — 雾蓝玻璃皮肤`；
@@ -68,9 +71,7 @@ git push --tags
 4. 上传附件：`dist/dsh-skin-mistblue-1.0.0.tgz`、`dist/dsh-skin-mistblue-1.0.0-src.zip`、
    `dist/SHA256SUMS.txt`。
 
-> 可选：仓库建成后把 `repository` / `homepage` / `bugs` 补进 `plugin/package.json`
-> （`"repository": {"type":"git","url":"git+https://github.com/<你的账号>/dsh-ui.git"}`），
-> 再 `npm publish` 一次补丁版本（如 1.0.1），npm 页面会显示源码链接。
+> `repository` 字段已写入包内；`npm publish` 后 npm 页面会显示源码链接。
 
 ## 3. 发布后验收
 
