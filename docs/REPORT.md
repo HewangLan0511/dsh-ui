@@ -616,3 +616,38 @@ node tools/release.mjs
 
 
 
+
+
+---
+
+## 19. 左侧面板列表：拖动换位 + 再次点击返回（2026-10-24 第十三轮，`v1.13-ui` / `1.0.1`）
+
+用户要求把「插件 / 上下文洞察 / MCP 连接器 …」这些左侧面板选项做成可拖动换位，
+并支持“点开后再点一次返回上一个窗口”。
+
+### 19.1 实现（纯客户端，不改宿主）
+
+- 宿主 `PanelRow` 只有 `onClick: selectPanel(id)`；面板顺序来自 `sidebar.panellist` 槽的
+  `order`（apply 里按 order 排序）。插件不能改别的插件的槽 options，所以：
+  - **换位 = 每行 CSS `order`**：导航是 flex column，给每行写 `style.order` 即可改变视觉顺序，
+    不动 DOM（React key / 命中区 / 事件都保持）；顺序写
+    `localStorage: dsh-skin-mistblue/panel-order`，React 重渲染后由 MutationObserver 重放。
+  - **再次点击 = `layout.selectPanel(null)`**：布局服务公开该方法（返回 Conversation）；
+    打开面板前记录来自的会话 tab（aria-selected 文本），当前面板由
+    `layout.panelInfo.getSnapshot().activePanelId` 判定。
+- 拖拽交互：document 级 pointerdown → 位移 >6px 进入拖拽 → 按行矩形中点计算落点并即时改 order →
+  pointerup 持久化；拖动过才吞掉后续 click（普通点击正常触发 selectPanel）。
+- 样式 `23-panel-reorder.css`：行 cursor: grab、拖动行 scale/opacity/投影、拖动期间禁选中。
+
+### 19.2 验证
+
+- 实机：点开「上下文洞察」→ 再点一次回到会话（已验证）；普通点击仍能打开面板；
+  `tools/test-plugin-logic.mjs` 9/9 PASS。
+- 拖拽的实机自动化受窗口 DPI / 浮窗抢占影响（pointerdown 常落到行外），
+  以代码路径 + 一次成功换位（顺序被持久化并重放）为准；建议实机拖一下行确认手感。
+
+### 19.3 说明
+
+- 顺序持久化在浏览器 localStorage，换机器 / 换 profile 不跟随；要重置删
+  `dsh-skin-mistblue/panel-order` 即可。
+- 面板列表新增 / 移除插件时会按已保存的标签顺序尽量排列，新面板排在末尾再归一化。

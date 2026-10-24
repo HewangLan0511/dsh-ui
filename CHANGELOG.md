@@ -1,7 +1,20 @@
 # Changelog
 
-本项目的版本分两套：`vX.Y-ui` 是界面迭代里程碑（git tag），`1.0.0` 是插件对外的发布版本。
+本项目的版本分两套：`vX.Y-ui` 是界面迭代里程碑（git tag），`1.x` 是插件对外的发布版本。
 插件版本在 `plugin/package.json`；界面里程碑与发布版本的关系如下。
+
+## 1.0.1 — 2026-10-24
+
+左侧面板列表增强（纯客户端，不改宿主）：
+
+- **拖动换位**：`插件 / 上下文洞察 / MCP 连接器 …` 可按住上下拖动重排，
+  用每行 CSS `order` 实现（不动 DOM，React key / 命中区不变），顺序存
+  `localStorage: dsh-skin-mistblue/panel-order`，重排后自动重放。
+- **再次点击返回**：点击已打开的选项再次点击 → `layout.selectPanel(null)` 回到会话；
+  打开面板前会记住来自哪个会话 tab（供回退）。
+- 修复：普通点击被误判为拖动结束而吞掉（只有真正拖动过才吞 click）。
+- 新增 `23-panel-reorder.css`（拖动中的行样式 + cursor）与对应 `initSidebarEnhancer`。
+- 发布：`dsh-skin-mistblue@1.0.1`。
 
 ## 1.0.0 — 2026-10-24
 
@@ -15,7 +28,7 @@
   含预览的面板/dockkit 容器一并做实），修复预览文字与对话区叠字
 - 新增 git tag `v1.0.0`（此前界面里程碑 v1.0-ui … v1.12-ui 全部保留）
 
-## v1.12-ui — 拖动分栏流畅化
+## v1.13-ui — 左侧面板列表拖动换位 + 二次点击返回
 
 - `initResizeGuard`：pointerdown 命中 `[data-dockkit-divider]` 时**立即**摘掉玻璃材质
   （不再等 4px 位移），拖动第一帧就轻量化

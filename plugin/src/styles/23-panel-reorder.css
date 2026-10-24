@@ -1,0 +1,42 @@
+/* ============================================================================
+   dsh-skin-mistblue · 23 panel reorder (v1.13)
+   ----------------------------------------------------------------------------
+   Client half (`initSidebarEnhancer`) adds two behaviours to the left sidebar
+   panel list (插件 / 上下文洞察 / MCP 连接器 …):
+     · drag a row up/down to reorder it (per-row CSS `order`, persisted);
+     · click the already-open row again to return to the previous view.
+   The host owns the DOM, so reordering is done with `style.order` on the flex
+   column (no node moves → React keys and hit areas stay intact).
+   ========================================================================== */
+
+html[data-dsg='on'] nav[class*='_panelList'] > button[class*='_panelRow'] {
+  cursor: grab;
+  transition:
+    transform 120ms var(--dsg-ease),
+    box-shadow 120ms var(--dsg-ease),
+    background-color 120ms var(--dsg-ease);
+}
+
+html[data-dsg='on'][data-dsg-panel-drag] body {
+  user-select: none;
+  cursor: grabbing;
+}
+
+html[data-dsg='on'] nav[class*='_panelList'] > button[class*='_panelRow'].dsg-panel-row-drag {
+  position: relative;
+  z-index: 3;
+  cursor: grabbing;
+  opacity: 0.94;
+  transform: scale(1.015);
+  background-color: var(--dsg-row-hover) !important;
+  box-shadow:
+    0 10px 24px -10px rgba(23, 48, 108, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.42);
+}
+
+html[data-dsg='on'] body[data-ds-dark-theme]
+  nav[class*='_panelList'] > button[class*='_panelRow'].dsg-panel-row-drag {
+  box-shadow:
+    0 12px 26px -12px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}

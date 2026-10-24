@@ -364,11 +364,294 @@ window.__ModuleLoader__.load({
       } catch (e) { /* non-fatal */ }
     }
 
+    // Left sidebar panel list: drag-to-reorder + click-again-to-go-back --------
+    // The host renders the panel list (插件 / 上下文洞察 / MCP 连接器 …) in registry
+    // order and always calls selectPanel(id) on click. Both behaviours are added
+    // here without touching host state:
+    //   · reorder = per-row CSS `order` (flex column), persisted in localStorage,
+    //     re-applied after every React re-render; no DOM moves, so React keys stay.
+    //   · click-again = remember the view that was active when the panel opened
+    //     (conversation tab or previous panel) and replay it.
+    var PANEL_ORDER_KEY = 'dsh-skin-mistblue/panel-order'
+
+    function initSidebarEnhancer(ctx) {
+      if (typeof document === 'undefined' || typeof window === 'undefined') return
+      if (window.__dsgSidebarEnhancer) return
+      window.__dsgSidebarEnhancer = true
+      var ROW_SEL = 'button[class*="_panelRow"]'
+      var NAV_SEL = 'nav[class*="_panelList"]'
+      var TAB_SEL = '[data-conversation-tabs] [role="tab"]'
+      var drag = null
+      var suppressClick = false
+      var lastView = null
+      var nav = null
+      var lastSig = ''
+      var schedule = false
+
+      function rowOf(node) {
+        if (!node || node.nodeType !== 1 || !node.closest) return null
+        return node.closest(ROW_SEL)
+      }
+      function rowsOf() {
+        return nav ? Array.prototype.slice.call(nav.querySelectorAll(ROW_SEL)) : []
+      }
+      function labelOf(row) {
+        if (!row) return ''
+        return row.getAttribute('aria-label') || (row.textContent || '').trim()
+      }
+      function activeRow() {
+        if (!nav) return null
+        return nav.querySelector(ROW_SEL + '[aria-current="page"]')
+      }
+      function activeTab() {
+        var tabs = document.querySelectorAll(TAB_SEL)
+        for (var i = 0; i < tabs.length; i++) {
+          if (tabs[i].getAttribute('aria-selected') === 'true') return tabs[i]
+        }
+        return null
+      }
+      function layoutService() {
+        try { return ctx.get ? ctx.get('layout') : null } catch (e) { return null }
+      }
+      function panelId() {
+        var layout = layoutService()
+        try {
+          if (layout && layout.panelInfo && layout.panelInfo.getSnapshot) {
+            return layout.panelInfo.getSnapshot().activePanelId
+          }
+        } catch (e) { /* non-fatal */ }
+        return undefined
+      }
+      function selectPanel(id) {
+        var layout = layoutService()
+        if (!layout || typeof layout.selectPanel !== 'function') return false
+        try {
+          layout.selectPanel(id)
+          return true
+        } catch (e) { return false }
+      }
+      function readOrder() {
+        try {
+          var raw = readItem(PANEL_ORDER_KEY)
+          return raw ? JSON.parse(raw) : []
+        } catch (e) { return [] }
+      }
+      function saveOrder() {
+        var labels = rowsOf()
+          .filter(function (r) { return r.style.order !== '' })
+          .sort(function (a, b) { return (parseInt(a.style.order, 10) || 0) - (parseInt(b.style.order, 10) || 0) })
+          .map(labelOf)
+        try { localStorage.setItem(PANEL_ORDER_KEY, JSON.stringify(labels)) } catch (e) { /* non-fatal */ }
+      }
+      function visualRows() {
+        return rowsOf().sort(function (a, b) {
+          var ao = a.style.order === '' ? 9999 : parseInt(a.style.order, 10)
+          var bo = b.style.order === '' ? 9999 : parseInt(b.style.order, 10)
+          if (ao !== bo) return ao - bo
+          return rowsOf().indexOf(a) - rowsOf().indexOf(b)
+        })
+      }
+      function applyOrder() {
+        if (!nav || drag) return
+        var rows = rowsOf()
+        if (!rows.length) return
+        var sig = rows.map(labelOf).join('|')
+        var missing = rows.some(function (r) { return r.style.order === '' })
+        if (sig === lastSig && !missing) return
+        lastSig = sig
+        var saved = readOrder()
+        rows.forEach(function (r, i) {
+          var pos = saved.indexOf(labelOf(r))
+          r.style.order = String(pos >= 0 ? pos : saved.length + i)
+        })
+        // saved labels that no longer exist shouldn't stretch the order gaps
+        visualRows().forEach(function (r, i) { r.style.order = String(i) })
+      }
+      function scheduleApply() {
+        if (schedule) return
+        schedule = true
+        window.requestAnimationFrame(function () {
+          schedule = false
+          findNav()
+          applyOrder()
+        })
+      }
+      function setNav(next) {
+        if (nav === next) return
+        nav = next
+        lastSig = ''
+        if (!nav) return
+        applyOrder()
+      }
+      function findNav() {
+        var found = document.querySelector(NAV_SEL)
+        if (found) setNav(found)
+      }
+      function reorderTo(x, y) {
+        if (!nav || !drag) return
+        // Geometry based (not elementFromPoint): the pointer may sit between rows,
+        // over the tooltip layer or outside the nav while dragging fast.
+        var list = visualRows()
+        var over = null
+        var nearest = null
+        var nearestDist = Infinity
+        for (var i = 0; i < list.length; i++) {
+          var r = list[i]
+          if (r === drag.row) continue
+          var rect = r.getBoundingClientRect()
+          if (y >= rect.top && y <= rect.bottom) { over = r; break }
+          var mid = rect.top + rect.height / 2
+          var d = Math.abs(y - mid)
+          if (d < nearestDist) { nearestDist = d; nearest = r }
+        }
+        var target = over || nearest
+        if (!target || target === drag.row) return
+        var tr = target.getBoundingClientRect()
+        var after = !over || y > tr.top + tr.height / 2
+        var without = list.filter(function (r) { return r !== drag.row })
+        var targetIdx = without.indexOf(target)
+        if (targetIdx < 0) return
+        without.splice(after ? targetIdx + 1 : targetIdx, 0, drag.row)
+        without.forEach(function (r, idx) { r.style.order = String(idx) })
+      }
+      function cleanupDrag() {
+        if (!drag) return
+        drag.row.classList.remove('dsg-panel-row-drag')
+        document.documentElement.removeAttribute('data-dsg-panel-drag')
+        document.body.style.cursor = ''
+        if (drag.moved) saveOrder()
+        var wasMoved = drag.moved
+        drag = null
+        // A plain click also ends the drag gesture; only a real drag must swallow
+        // the following click, otherwise panel rows would never open.
+        if (wasMoved) {
+          suppressClick = true
+          window.setTimeout(function () { suppressClick = false }, 400)
+        }
+        document.removeEventListener('pointermove', onPointerMove, true)
+        document.removeEventListener('pointerup', onPointerUp, true)
+        document.removeEventListener('pointercancel', onPointerUp, true)
+      }
+      function onPointerMove(e) {
+        if (!drag || e.pointerId !== drag.pointerId) return
+        if (!drag.moved) {
+          var dx = e.clientX - drag.x
+          var dy = e.clientY - drag.y
+          if (dx * dx + dy * dy < 36) return
+          drag.moved = true
+          document.documentElement.setAttribute('data-dsg-panel-drag', '')
+          document.body.style.cursor = 'grabbing'
+          drag.row.classList.add('dsg-panel-row-drag')
+        }
+        e.preventDefault()
+        reorderTo(e.clientX, e.clientY)
+      }
+      function onPointerUp(e) {
+        if (!drag || e.pointerId !== drag.pointerId) return
+        cleanupDrag()
+      }
+      function onPointerDown(e) {
+        if (e.button !== 0) return
+        var row = rowOf(e.target)
+        if (!row) return
+        if (!nav || !nav.contains(row)) {
+          findNav()
+          if (!nav || !nav.contains(row)) return
+        }
+        drag = { row: row, x: e.clientX, y: e.clientY, pointerId: e.pointerId, moved: false }
+        document.addEventListener('pointermove', onPointerMove, true)
+        document.addEventListener('pointerup', onPointerUp, true)
+        document.addEventListener('pointercancel', onPointerUp, true)
+      }
+      function navigateBack(view) {
+        // authoritative path: layout.selectPanel(null) returns to the Conversation
+        if (selectPanel(null)) return true
+        if (!view) {
+          var tab = document.querySelector(TAB_SEL)
+          if (tab) tab.click()
+          return true
+        }
+        if (view.type === 'panel') {
+          var target = rowsOf().filter(function (r) { return labelOf(r) === view.label })[0]
+          if (target) { target.click(); return true }
+        }
+        var tabs = document.querySelectorAll(TAB_SEL)
+        var pick = null
+        for (var i = 0; i < tabs.length; i++) {
+          if ((tabs[i].textContent || '').trim() === view.label) { pick = tabs[i]; break }
+        }
+        if (!pick && tabs.length) pick = tabs[0]
+        if (pick) pick.click()
+        return true
+      }
+      function onClick(e) {
+        var row = rowOf(e.target)
+        if (!row || !nav || !nav.contains(row)) return
+        if (suppressClick) {
+          e.preventDefault()
+          e.stopImmediatePropagation()
+          suppressClick = false
+          return
+        }
+        var pid = panelId()
+        var active = activeRow()
+        if (pid !== null && pid !== undefined && active === row) {
+          // second click on the already-open panel: return to the previous view
+          e.preventDefault()
+          e.stopImmediatePropagation()
+          navigateBack(lastView)
+          return
+        }
+        // opening a panel: remember where we came from
+        var prev = activeRow()
+        if (prev && prev !== row) {
+          lastView = { type: 'panel', label: labelOf(prev) }
+        } else {
+          var tab = activeTab()
+          lastView = { type: 'tab', label: tab ? (tab.textContent || '').trim() : '对话' }
+        }
+      }
+      function start() {
+        findNav()
+        if (!nav) return false
+        document.addEventListener('pointerdown', onPointerDown, true)
+        document.addEventListener('click', onClick, true)
+        try {
+          var mo = new MutationObserver(scheduleApply)
+          mo.observe(document.body, { childList: true, subtree: true })
+          ctx.effect(function () {
+            return function () {
+              mo.disconnect()
+              document.removeEventListener('pointerdown', onPointerDown, true)
+              document.removeEventListener('click', onClick, true)
+              if (drag) cleanupDrag()
+              nav = null
+              window.__dsgSidebarEnhancer = false
+            }
+          }, 'dsh-skin-mistblue: sidebar enhancer')
+        } catch (e) { /* non-fatal */ }
+        return true
+      }
+      if (!start()) {
+        var tries = 0
+        var timer = window.setInterval(function () {
+          tries++
+          if (start() || tries > 120) window.clearInterval(timer)
+        }, 250)
+        try {
+          ctx.effect(function () {
+            return function () { window.clearInterval(timer) }
+          }, 'dsh-skin-mistblue: sidebar enhancer wait')
+        } catch (e) { /* non-fatal */ }
+      }
+    }
+
     function apply(ctx) {
       ctxRef = ctx
       detectGlassFallback()
       syncDesktopCaption(ctx)
       initResizeGuard(ctx)
+      initSidebarEnhancer(ctx)
 
       // settings labels follow the live DSH locale (zh is the product default)
       try {

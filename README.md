@@ -10,7 +10,7 @@ DeepSeek Harness（DSH）的玻璃质感皮肤：以 DeepSeek 网页端（deepse
 雾蓝渐变氛围背景 + 分层柔光玻璃，弹窗 / 显示卡 / 详情卡按可读性分级加雾，
 浅色与深色同构，设置页中英双语并跟随 DSH locale。
 
-**版本 `1.0.0` · MIT · 已发布 npm：[`dsh-skin-mistblue`](https://www.npmjs.com/package/dsh-skin-mistblue)**
+**版本 `1.0.1` · MIT · 已发布 npm：[`dsh-skin-mistblue`](https://www.npmjs.com/package/dsh-skin-mistblue)**
 
 ![Hero](docs/assets/final/hero.png)
 
@@ -33,6 +33,9 @@ DeepSeek Harness（DSH）的玻璃质感皮肤：以 DeepSeek 网页端（deepse
   文字可读优先，保留 16px 霜 + 釉 + 发丝边。
 - **文档预览不透明纸面**：文档 / 文本 / PDF 预览与差异视图使用实底纸面（`--dsg-doc-paper`），
   含预览的面板与 dockkit 容器一并做实 —— 预览文字不会与对话区叠字。
+- **左侧面板列表增强**：`插件 / 上下文洞察 / MCP 连接器 …` 支持按住**拖动换位**
+  （顺序存 localStorage 并自动重放）；已打开的选项**再点一次**通过
+  `layout.selectPanel(null)` 返回会话。
 - **拖动性能**：按下分隔条即卸掉霜与超大投影；拖动期间左右分栏用
   `transition: width 90ms linear` 有界跟随（快速甩动摊到多帧、不瞬移），
   dockkit 的慢过渡与滚动锚定同时关闭；松手宽度贴合光标，静止外观不变。
@@ -142,6 +145,7 @@ git checkout baseline-v0 -- .        # 回到施工前快照
 
 `1.0.0` — 汇总 v1.0-ui → v1.12-ui 十二轮迭代（玻璃引擎、悬浮 header、右栏、拖动性能、
 中文设置、改名雾蓝、收起态标题栏、tooltip 玻璃化、文档预览纸面、拖动流畅化）。
+`1.0.1` — 左侧面板列表拖动换位 + 二次点击返回（第十三轮，`v1.13-ui`）。
 逐版本说明见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## License

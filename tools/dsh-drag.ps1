@@ -1,10 +1,11 @@
-# Simulate a horizontal splitter drag inside the DSH window and capture mid-drag.
+# Simulate a drag inside the DSH window and capture mid-drag.
 # Usage (via scriptblock):
-#   & $sb -X 326 -Y 500 -DX 40 -OutPath .ref/screenshots-archive/drag.png [-AfterPath ...]
+#   & $sb -X 326 -Y 500 -DX 40 -OutPath .ref/screenshots-archive/drag.png [-DY 0] [-AfterPath ...]
 param(
   [int]$X = 326,
   [int]$Y = 500,
   [int]$DX = 40,
+  [int]$DY = 0,
   [string]$OutPath = ".ref/screenshots-archive/drag.png",
   [string]$AfterPath = "",
   [string]$TitleContains = "DeepSeek Harness",
@@ -62,12 +63,12 @@ $w = [int]$r[2]; $hh = [int]$r[3]
 [DshDrag]::Down($sx, $sy)
 Start-Sleep -Milliseconds 120
 for ($i = 1; $i -le $Steps; $i++) {
-  [DshDrag]::MoveTo($sx + [int]($DX * $i / $Steps), $sy)
+  [DshDrag]::MoveTo($sx + [int]($DX * $i / $Steps), $sy + [int]($DY * $i / $Steps))
   Start-Sleep -Milliseconds 25
 }
 Start-Sleep -Milliseconds 200
 Shot $OutPath
-Write-Output "mid-drag capture: $OutPath (at ${sx},${sy} +${DX})"
+Write-Output "mid-drag capture: $OutPath (at ${sx},${sy} +${DX},+${DY})"
 # return to the original splitter position so the user's layout is unchanged, then release
 [DshDrag]::MoveTo($sx, $sy)
 Start-Sleep -Milliseconds 180
