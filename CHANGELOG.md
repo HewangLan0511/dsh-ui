@@ -13,7 +13,16 @@
 - 新增 `tools/release.mjs`：构建 + `npm pack` + 源码 zip + SHA-256 校验和
 - 文档预览改为不透明纸面（`--dsg-doc-paper` + `--dsw-alias-bg-document-preview` 映射 +
   含预览的面板/dockkit 容器一并做实），修复预览文字与对话区叠字
-- 新增 git tag `v1.0.0`（此前界面里程碑 v1.0-ui … v1.11-ui 全部保留）
+- 新增 git tag `v1.0.0`（此前界面里程碑 v1.0-ui … v1.12-ui 全部保留）
+
+## v1.12-ui — 拖动分栏流畅化
+
+- `initResizeGuard`：pointerdown 命中 `[data-dockkit-divider]` 时**立即**摘掉玻璃材质
+  （不再等 4px 位移），拖动第一帧就轻量化
+- 新增 `22-drag-smooth.css`：拖动期间移动边改为 `transition: width 90ms linear`
+  有界跟随（快速甩动摊到多帧、不瞬移），dockkit host/divider/split/cell/pane/surface
+  统一关掉过渡与动画，会话区 `overflow-anchor: none` 避免滚动补偿造成错位
+- 不拦截 pointermove：宿主 pointerup 提交仍按真实坐标，松手宽度永远贴合光标
 
 ## v1.11-ui — 文档预览不透明
 

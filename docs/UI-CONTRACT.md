@@ -94,7 +94,10 @@ node tools/build-plugin.mjs     # 合并 src/styles/*.css（按文件名排序�
 ## 7. 运行时约定（v1.6 起）
 
 1. **拖动降级（resize guard）**：`plugin/src/client-template.js` 的 `initResizeGuard`
-   在指针位移 >4px 时给根节点加 `data-dsg-resizing`，`pointerup/pointercancel/blur/15s` 移除。
+   在指针位移 >4px 时给根节点加 `data-dsg-resizing`，`pointerup/pointercancel/blur/15s` 移除；
+   **v1.12 起**：pointerdown 命中 `[data-dockkit-divider]` 时立即置位（拖动第一帧就轻量化），
+   并把移动边交给 `22-drag-smooth.css` 做 `width 90ms linear` 的有界跟随（快速甩动不瞬移），
+   同时关掉 dockkit 慢过渡、动画与会话区 scroll anchoring。
    样式层只允许在该状态下降低材质成本（去掉 backdrop-filter 与超大外投影），**禁止**在
    非拖动状态下改变静止外观；新增玻璃面时请把它加入 `00-foundation.css` 的 resize guard 块。
 2. **i18n 不可缓存**：设置页文案统一走 `T(zh, en)`；`currentLanguage()` 每次求值

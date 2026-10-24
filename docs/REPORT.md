@@ -552,6 +552,55 @@ node tools/release.mjs
 |---|---|
 | 右栏 README.md 差异预览（不透明纸面） | [`assets/final/docpreview-opaque.png`](assets/final/docpreview-opaque.png) |
 
+---
+
+## 18. 拖动分栏的流畅化（2026-10-24 第十二轮，`v1.12-ui`）
+
+用户反馈：拖动侧边栏边界时动画很卡，还会出现元素错位、提前落位/延迟落位；
+要求拖动不必逐像素绑定光标、要设一个最大跟随速度，并且在该速度下渲染保持流畅。
+
+### 18.1 根因（结合宿主实现）
+
+宿主 dockkit 的拖拽是「每个 pointermove 都 setState 预览尺寸」：
+
+- 用户鼠标 125–1000Hz 的原始事件 → 每帧多次 React 渲染 + 整棵 split 树 reflow；
+- dockkit 外壳（`[data-dockkit-host]` / `[data-dockkit-divider]`）在
+  `data-sidebar-right-open` 下仍带 `transition: transform var(--ds-transition-duration-slow)`，
+  宽度变化期间任何 transform/布局变化都会被这条慢过渡二次插值 → 边界看起来"延迟落位"；
+- 会话区开着 scroll anchoring，宽度每变一次浏览器就滚动补偿一次 → "提前落位/元素错位"；
+- 我们此前只在指针位移 >4px 后才摘掉玻璃材质，拖动最开始几帧仍在付全量霜的成本。
+
+### 18.2 修法（不改宿主指针流，全部是 CSS + guard 时机）
+
+1. **立即降级**：`initResizeGuard` 在 `pointerdown` 命中 `[data-dockkit-divider]` 时
+   直接把 `data-dsg-resizing` 打上（不必等 4px），拖动第一帧就卸掉霜与超大外投影。
+2. **有界跟随（最大速度）**：新增 `22-drag-smooth.css`，拖动期间把移动边换成
+   `transition: width 90ms linear, transform 90ms linear`。宽度不再瞬移到光标位置，
+   而是用 90ms 线性追赶 —— 快速甩动被均匀摊到多帧（视觉上就是"跟得上但不瞬移"），
+   慢速拖动仍然近似 1:1；松手后 90ms 内自然收敛到最终宽度。
+3. **拆掉竞争过渡**：拖动期间 dockkit host / divider / split / cell / pane / surface
+   统一 `transition: none; animation: none`，避免慢过渡与宽度追赶叠加。
+4. **关掉滚动锚定**：`[data-conversation-region='chat']`、`[data-chat-flow]`
+   在拖动期间 `overflow-anchor: none`，不再每帧滚动补偿。
+5. 左右两侧都覆盖：右栏 `[data-sidebar-right-panel]`、左栏列 `div:has(> [data-slot='sidebar'])`
+   与 `[data-slot='sidebar']`。
+
+### 18.3 设计取舍
+
+- 不拦截/伪造 pointermove：宿主的分栏提交（pointerup 时按真实坐标 `resizeSplit`）
+  保持原样，因此**松手后的宽度永远等于光标位置**，不会出现"拖动预览与最终位置不一致"。
+- 90ms 是"最大跟随速度"的实际旋钮：想更跟手可调到 60ms，想更稳可到 120ms。
+- 拖动期间只降低材质成本、不改静止外观；松手后一切恢复。
+
+### 18.4 验证与限制
+
+- 构建 12 CSS / 154.1 KiB；`tools/test-plugin-logic.mjs` 9/9 PASS。
+- UI 自动化在本机只能近似复现分栏拖拽（窗口 DPI/坐标、浮层抢占使 pointerdown 时常落到
+  面板 padding 而非 4px 宽的分隔条），因此本轮以「规则 + 宿主源码路径」复核为主：
+  宿主 `onDividerPressed → r7 → resizeSplit` 的提交路径未被修改，CSS 只影响过渡与材质。
+- 建议实机复核：拖动右栏边界快速左右甩动，确认边界连续、松手后宽度贴合光标。
+
+
 
 
 

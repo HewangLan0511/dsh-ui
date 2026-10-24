@@ -336,7 +336,18 @@ window.__ModuleLoader__.load({
         armed = true
         startX = e.clientX
         startY = e.clientY
-        window.addEventListener('pointermove', onMove, true)
+        // A splitter press IS a resize drag from the first frame: drop the frosted
+        // materials immediately instead of waiting for the 4px threshold, otherwise
+        // the first frames of every drag still pay for the full glass stack.
+        var target = e.target
+        var divider = target && target.closest ? target.closest('[data-dockkit-divider]') : null
+        if (divider) {
+          active = true
+          html.setAttribute('data-dsg-resizing', '1')
+          timer = window.setTimeout(clear, 15000)
+        } else {
+          window.addEventListener('pointermove', onMove, true)
+        }
         window.addEventListener('pointerup', clear, true)
         window.addEventListener('pointercancel', clear, true)
         window.addEventListener('blur', clear, true)

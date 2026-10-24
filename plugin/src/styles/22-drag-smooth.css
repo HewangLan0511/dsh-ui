@@ -1,0 +1,45 @@
+/* ============================================================================
+   dsh-skin-mistblue · 22 drag smooth (v1.12)
+   ----------------------------------------------------------------------------
+   Splitter drags drive pane width with a React state update per pointermove; the
+   dockkit shell also keeps `transition: transform var(--ds-transition-duration-slow)`
+   armed while open. That combination is what makes panes feel heavy and land
+   early/late. Instead of fighting the host's pointer stream we keep the pointer
+   behaviour untouched and simply:
+     · start the expensive-material fallback on pointerdown (see client guard),
+     · replace the shell's slow transform transition with a short *linear width
+       chase* — the split follows the cursor through a 90ms linear interpolation,
+       so a fast flick can never teleport the layout in one frame, while slow
+       drags still feel 1:1,
+     · drop scroll anchoring so reflow never scroll-compensates mid-drag.
+   ========================================================================== */
+
+html[data-dsg='on'][data-dsg-resizing] [data-dockkit-host],
+html[data-dsg='on'][data-dsg-resizing] [data-dockkit-empty],
+html[data-dsg='on'][data-dsg-resizing] [data-dockkit-divider],
+html[data-dsg='on'][data-dsg-resizing] [data-dockkit-split],
+html[data-dsg='on'][data-dsg-resizing] [data-dockkit-cell],
+html[data-dsg='on'][data-dsg-resizing] [data-dockkit-pane],
+html[data-dsg='on'][data-dsg-resizing] [data-dockkit-surface] {
+  transition: none !important;
+  animation: none !important;
+}
+
+/* the moving edges chase the pointer with a bounded, linear follow */
+html[data-dsg='on'][data-dsg-resizing] [data-sidebar-right-panel],
+html[data-dsg='on'][data-dsg-resizing] div:has(> [data-slot='sidebar']),
+html[data-dsg='on'][data-dsg-resizing] [data-slot='sidebar'] {
+  transition: width 90ms linear, transform 90ms linear !important;
+  will-change: width;
+}
+
+html[data-dsg='on'][data-dsg-resizing] [data-conversation-region='chat'],
+html[data-dsg='on'][data-dsg-resizing] [data-chat-flow] {
+  overflow-anchor: none;
+  scroll-behavior: auto;
+}
+
+html[data-dsg='on'][data-dsg-resizing] [data-dockkit-divider] {
+  cursor: col-resize;
+  touch-action: none;
+}
