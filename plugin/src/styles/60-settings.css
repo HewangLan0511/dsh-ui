@@ -413,20 +413,46 @@ html[data-dsg='on'] [data-sidebar-right-panel] :is(button, a)[class*='_entry']:h
 }
 
 /* ============================================================================
-   5. document preview — paper plate (readable, never see-through)
+   5. document preview — opaque paper plate (readability first)
+   ----------------------------------------------------------------------------
+   文档预览 / 文本预览 / PDF 页是“读字”的 L3 面：背景必须完全不透明，否则对话区
+   的高对比文字会透上来，和预览内容叠成“双行字”（用户反馈）。宿主 token
+   --dsw-alias-bg-document-preview 也已映射到同一张纸（00-foundation）。
    ========================================================================== */
 html[data-dsg='on'] [data-document-preview],
+html[data-dsg='on'] [data-textpreview-state],
 html[data-dsg='on'] [data-textpreview-wrap],
 html[data-dsg='on'] [data-code-preview],
 html[data-dsg='on'] [data-pdf-preview],
 html[data-dsg='on'] [data-html-preview],
 html[data-dsg='on'] [data-document-markdown],
 html[data-dsg='on'] [data-plan-preview] [class*='_document'] {
-  background-color: var(--dsg-code-banner);
+  background-color: var(--dsg-doc-paper) !important;
+  background-image: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
   border: 0.5px solid var(--dsg-border-hair);
   border-radius: 14px;
   box-shadow: var(--dsg-bevel-l1);
   color: var(--dsw-alias-label-primary);
+}
+/* 预览所在的整个面板 / dockkit 容器也一起做实：预览通常铺满 tab，
+   只把纸面做实、父容器仍透，文字照样会从纸外的边角透上来。 */
+html[data-dsg='on'] [data-sidebar-right-panel]:has([data-document-preview]),
+html[data-dsg='on'] [data-dockkit-pane]:has([data-document-preview]),
+html[data-dsg='on'] [data-dockkit-content]:has([data-document-preview]),
+html[data-dsg='on'] [data-dockkit-surface]:has([data-document-preview]),
+html[data-dsg='on'] [data-dockkit-host]:has([data-document-preview]),
+html[data-dsg='on'] [data-slot='sidebar-right']:has([data-document-preview]),
+html[data-dsg='on'] [role='dialog']:has([data-document-preview]),
+html[data-dsg='on'] [data-shell-overlay] :has(> [data-document-preview]),
+html[data-dsg='on'] [data-slot='sidebar-documentpreview'] {
+  --dsg-panel-fill: var(--dsg-doc-paper);
+  --dsg-panel-backdrop: none;
+  background-color: var(--dsg-doc-paper) !important;
+  background-image: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
 }
 html[data-dsg='on'] [data-document-preview] [class*='_header'],
 html[data-dsg='on'] [data-textpreview-wrap] [class*='_header'] {

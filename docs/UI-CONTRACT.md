@@ -118,4 +118,12 @@ node tools/build-plugin.mjs     # 合并 src/styles/*.css（按文件名排序�
    - 图表卡必须 `z-index: 40`，否则坐标文字会压到提示卡上；
    - **禁止**降低填充率把文字透出来（对比度）；无 `backdrop-filter` 时用 98% 填充兜底；
    - 悬停预览卡（HoverCard：文件预览/会话预览）保持宿主材质 —— 玻璃会把预览图片洗掉。
+6. **文档预览纸面（v1.11 起）**：文档 / 文本 / PDF / HTML / 差异预览是"读字"面，必须实底：
+   - `--dsg-doc-paper`（浅 `#ffffff` / 深 `#0c1322`），并把它映射给宿主
+     `--dsw-alias-bg-document-preview`；
+   - 纸面本体 `[data-document-preview]` / `[data-textpreview-state]` / `[data-code-preview]` 等
+     一律 `background: var(--dsg-doc-paper) !important` + `backdrop-filter: none`；
+   - **含预览的容器**（`[data-sidebar-right-panel]`、`[data-dockkit-*]`、`[role='dialog']`、
+     `[data-slot='sidebar-documentpreview']`）用 `:has([data-document-preview])` 一并做实，
+     否则纸面之外的边角仍会透出对话文字。
 

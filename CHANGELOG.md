@@ -11,7 +11,20 @@
 - 新增 `LICENSE`（MIT）、`CHANGELOG.md`、`docs/RELEASE.md`、`plugin/README.md`
 - `plugin/package.json`：版本 `1.0.0`、移除 `private`、补 `license`/`keywords`/`files`
 - 新增 `tools/release.mjs`：构建 + `npm pack` + 源码 zip + SHA-256 校验和
-- 新增 git tag `v1.0.0`（此前界面里程碑 v1.0-ui … v1.10-ui 全部保留）
+- 文档预览改为不透明纸面（`--dsg-doc-paper` + `--dsw-alias-bg-document-preview` 映射 +
+  含预览的面板/dockkit 容器一并做实），修复预览文字与对话区叠字
+- 新增 git tag `v1.0.0`（此前界面里程碑 v1.0-ui … v1.11-ui 全部保留）
+
+## v1.11-ui — 文档预览不透明
+
+- 新增 `--dsg-doc-paper`（浅 `#ffffff` / 深 `#0c1322`），并把宿主
+  `--dsw-alias-bg-document-preview` 映射到它
+- `[data-document-preview]` / `[data-textpreview-state]` / `[data-code-preview]` 等纸面
+  改为**完全不透明**（原来 `--dsg-code-banner` 的 95% 仍会透字）
+- 预览所在的面板/dockkit 容器（`[data-sidebar-right-panel]`、`[data-dockkit-pane|content|surface|host]`、
+  `[data-slot='sidebar-documentpreview']`、全屏 dialog/overlay）用 `:has([data-document-preview])`
+  一并做实，避免"纸外仍透"的边角叠字
+
 
 ## v1.10-ui — tooltip 几乎不透明
 

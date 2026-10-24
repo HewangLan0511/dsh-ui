@@ -508,8 +508,50 @@ node tools/release.mjs
 ### 16.3 版本与标签
 
 - npm / 插件版本：`1.0.0`；
-- git tag：`v1.0.0`（发布提交），历史界面里程碑 `v1.0-ui` … `v1.10-ui` 全部保留；
+- git tag：`v1.0.0`（发布提交），历史界面里程碑 `v1.0-ui` … `v1.11-ui` 全部保留；
 - profile 内 bundle 同步升级为 `1.0.0`（`plugin_manager install_bundle`），设置页入口不变。
+
+---
+
+## 17. 文档预览改为不透明纸面（2026-10-24 第十一轮，`v1.11-ui`）
+
+用户打开 `docs/GLASS-SPEC.md` 的预览（右栏文档/差异预览）时，预览文字与对话区、
+文件变更卡的深色文字叠在一起，"两层字"完全看不清。
+
+### 17.1 根因
+
+1. 纸面本身不是实底：`[data-document-preview]` 用的是 `--dsg-code-banner`
+   （`rgba(255,255,255,0.95)` / 深色 0.96），仍有 4–5% 透过；
+2. 更重要的一层：**预览所在的容器是玻璃**。右栏在 fullscreen 模式下走 L3（84.6% + 霜），
+   普通 tab 走 L2（40%），dockkit 的 pane / content 又是透明的 —— 纸面之外、
+   或纸面透明时，底下的对话/文件卡直接透上来；
+3. 文档预览的宿主 token `--dsw-alias-bg-document-preview`（PDF 页用它）之前没有映射，
+   仍是半透明底。
+
+### 17.2 修法
+
+- 新增 `--dsg-doc-paper`：浅 `#ffffff` / 深 `#0c1322`（`00-foundation`）；
+- `--dsw-alias-bg-document-preview` 映射到 `--dsg-doc-paper`；
+- `60-settings.css §5`：`[data-document-preview]` / `[data-textpreview-state]` /
+  `[data-textpreview-wrap]` / `[data-code-preview]` / `[data-pdf-preview]` /
+  `[data-html-preview]` / `[data-document-markdown]` 等纸面改为**完全不透明**
+  （`background-color: var(--dsg-doc-paper) !important` + `backdrop-filter: none`）；
+- 任何**含预览的容器**也一并做实，避免“纸外仍透”：
+  `[data-sidebar-right-panel]:has([data-document-preview])`、
+  `[data-dockkit-pane|content|surface|host]:has(...)`、
+  `[data-slot='sidebar-right']:has(...)`、`[role='dialog']:has(...)`、
+  `[data-shell-overlay] :has(> [data-document-preview])`、`[data-slot='sidebar-documentpreview']`。
+
+### 17.3 验证
+
+- 实机打开右栏 README.md 差异预览：纸面纯白、无对话文字透出，代码/差异行清晰可读；
+- `node tools/test-plugin-logic.mjs` 9/9 PASS；构建 11 CSS / 151.3 KiB。
+- 已重新生成发布产物（`dist/*`），版本仍为 `1.0.0`（尚未发布，直接覆盖）。
+
+| 场景 | 截图 |
+|---|---|
+| 右栏 README.md 差异预览（不透明纸面） | [`assets/final/docpreview-opaque.png`](assets/final/docpreview-opaque.png) |
+
 
 
 

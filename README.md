@@ -27,6 +27,8 @@ DeepSeek Harness（DSH）的玻璃质感皮肤：以 DeepSeek 网页端（deepse
   收起态图标几何交回宿主、蓝点隐藏、tooltip 不再被玻璃染色。
 - **悬停 tooltip 玻璃化**：原生 tooltip 与图表悬停卡统一高填充玻璃（94% / 96%），
   文字可读优先，保留 16px 霜 + 釉 + 发丝边。
+- **文档预览不透明纸面**：文档 / 文本 / PDF 预览与差异视图使用实底纸面（`--dsg-doc-paper`），
+  含预览的面板与 dockkit 容器一并做实 —— 预览文字不会与对话区叠字。
 - **拖动性能**：指针拖动 >4px 期间给根节点打 `data-dsg-resizing`，临时卸掉霜与超大投影，
   松手即恢复，静止外观不变。
 - **i18n**：设置页文案动态读取 DSH `locale` 服务 / `<html lang>` / `navigator.language`，
@@ -128,8 +130,8 @@ git checkout baseline-v0 -- .        # 回到施工前快照
 
 ## 版本
 
-`1.0.0` — 汇总 v1.0-ui → v1.10-ui 十轮迭代（玻璃引擎、悬浮 header、右栏、拖动性能、
-中文设置、改名雾蓝、收起态标题栏、tooltip 玻璃化）。逐版本说明见 [CHANGELOG.md](CHANGELOG.md)。
+`1.0.0` — 汇总 v1.0-ui → v1.11-ui 十一轮迭代（玻璃引擎、悬浮 header、右栏、拖动性能、
+中文设置、改名雾蓝、收起态标题栏、tooltip 玻璃化、文档预览纸面）。逐版本说明见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## License
 

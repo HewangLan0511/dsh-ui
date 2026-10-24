@@ -52,6 +52,9 @@ html[data-dsg='on'] {
   --dsg-blue-strong: #3556f0;
   --dsg-blue-soft: rgba(77, 107, 254, 0.12);
   --dsg-blue-ring: rgba(77, 107, 254, 0.45);
+
+  /* document preview paper: fully opaque, never lets chat text show through */
+  --dsg-doc-paper: #ffffff;
 }
 
 /* ---- atmosphere ---------------------------------------------------------- */
@@ -202,6 +205,9 @@ html[data-dsg='on'] body {
   --dsw-alias-bg-overlay: var(--dsg-fill-l3);
   --dsw-alias-bg-module-platform: var(--dsg-fill-l1);
   --dsw-alias-bg-multi-select: var(--dsg-fill-l1);
+  /* document preview / pdf paper: host uses this for the preview page body —
+     opaque so dense text never blends with the conversation behind it. */
+  --dsw-alias-bg-document-preview: var(--dsg-doc-paper);
 
   --dsw-specific-sidebar-fill: var(--dsg-fill-l1);
   --dsw-specific-input-major: var(--dsg-fill-l2);
@@ -279,6 +285,9 @@ html[data-dsg='on'] body[data-ds-dark-theme] {
   --dsg-fill-l3: color-mix(in srgb,
       var(--dsg-tint) calc(var(--dsg-floor-base-dark) * 100%),
       color-mix(in srgb, var(--dsg-tint) calc(var(--dsg-a3) * 100%), transparent) calc((1 - var(--dsg-floor-base-dark)) * 100%));
+
+  /* document preview paper: fully opaque, never lets chat text show through */
+  --dsg-doc-paper: #0c1322;
 
   --dsg-sheen-l1: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02) 38%, rgba(255, 255, 255, 0.01));
   --dsg-sheen-l2: linear-gradient(180deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.03) 38%, rgba(255, 255, 255, 0.01));
