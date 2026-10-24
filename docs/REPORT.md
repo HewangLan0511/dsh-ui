@@ -700,3 +700,29 @@ node tools/release.mjs
 - 深色：填充混 #16304f，顶部渐变对齐 #0b1322，胶囊用 10%/4% 白渐变。
 
 验证：实机截图取样确认渐变生效、标题栏与左栏顶部同色；构建 13 CSS / 178.2 KiB。
+
+
+---
+
+## 22. 会话 tab 重复 tooltip（2026-10-25 第十七轮，`v1.17-ui` / `1.0.5`）
+
+现象：鼠标停在「对话 / 轨迹 / 上下文 …」tab 上，会出现一个同名的白釉玻璃药丸，
+看起来像标签行里多了一个 tab。
+
+根因：宿主 `dsh-client-ui-conversation` 的 tab 渲染是
+
+```
+button[role=tab] > Tooltip(label=viewTab.label, portal) > span[class*=tabLabel]
+```
+
+文字本来就可见，但又套了一层 Tooltip（500ms 延迟、portal 到 body）。我们的
+`50-overlays.css` 把 tooltip 统一做成 94% 高填充玻璃，于是它看起来像第二个 tab。
+
+修法：新增 `initTabTooltipGuard`（client-template.js）——在 document 捕获阶段监听
+`pointerover / mouseover / focusin`，命中 `[data-conversation-tabs] [role="tab"]`
+就 `stopImmediatePropagation()`，React 的 Tooltip 触发器收不到事件，弹层不再创建；
+click / keydown / :hover 都不受影响。
+
+验证：构建 13 CSS / 179.7 KiB；test 10/10 PASS；悬停 tab 行截图无弹层。
+
+发布后清理：GitHub 只保留最新 Release `v1.0.5`，v1.0.0–v1.0.4 的 Release 已删除。

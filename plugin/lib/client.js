@@ -676,12 +676,43 @@ window.__ModuleLoader__.load({
       }
     }
 
+    // The conversation view tabs wrap their already-visible label in a Tooltip,
+    // so hovering a tab pops a redundant glass pill with the same text — it reads
+    // like a duplicated tab. Suppress only the tooltip trigger for those tabs
+    // (pointerover / mouseover / focusin), leaving clicks, :hover styling and the
+    // tab row itself untouched.
+    function initTabTooltipGuard(ctx) {
+      if (typeof document === 'undefined') return
+      if (window.__dsgTabTooltipGuard) return
+      window.__dsgTabTooltipGuard = true
+      var TAB_SEL = '[data-conversation-tabs] [role="tab"]'
+      function onTrigger(e) {
+        var target = e.target
+        if (!target || target.nodeType !== 1 || !target.closest) return
+        if (target.closest(TAB_SEL)) e.stopImmediatePropagation()
+      }
+      document.addEventListener('pointerover', onTrigger, true)
+      document.addEventListener('mouseover', onTrigger, true)
+      document.addEventListener('focusin', onTrigger, true)
+      try {
+        ctx.effect(function () {
+          return function () {
+            document.removeEventListener('pointerover', onTrigger, true)
+            document.removeEventListener('mouseover', onTrigger, true)
+            document.removeEventListener('focusin', onTrigger, true)
+            window.__dsgTabTooltipGuard = false
+          }
+        }, 'dsh-skin-mistblue: tab tooltip guard')
+      } catch (e) { /* non-fatal */ }
+    }
+
     function apply(ctx) {
       ctxRef = ctx
       detectGlassFallback()
       syncDesktopCaption(ctx)
       initResizeGuard(ctx)
       initSidebarEnhancer(ctx)
+      initTabTooltipGuard(ctx)
 
       // settings labels follow the live DSH locale (zh is the product default)
       try {

@@ -3,6 +3,18 @@
 本项目的版本分两套：`vX.Y-ui` 是界面迭代里程碑（git tag），`1.x` 是插件对外的发布版本。
 插件版本在 `plugin/package.json`；界面里程碑与发布版本的关系如下。
 
+## 1.0.5 — 2026-10-25
+
+- **去掉会话 tab 的重复 tooltip**：宿主给「对话 / 轨迹 / 上下文 / 画廊 / 编队」每个 tab 的
+  可见文字又包了一层 Tooltip，悬停会弹出一个同名的白釉玻璃药丸，看起来像多出来一个 tab。
+  新增 `initTabTooltipGuard`：在 document 捕获阶段对
+  `[data-conversation-tabs] [role="tab"]` 的 pointerover / mouseover / focusin
+  执行 stopImmediatePropagation，只挡 tooltip 触发，tab 点击、:hover 样式、键盘切换都不变。
+- 本次发布后仓库只保留最新的 GitHub Release（更早的 v1.0.0–v1.0.4 Release 已删除）。
+- 发布：`dsh-skin-mistblue@1.0.5`（tag `v1.17-ui`）。
+
+## v1.17-ui — 会话 tab 重复 tooltip
+
 ## 1.0.4 — 2026-10-24
 
 左栏顶部与标题栏 / 主体之间的颜色过渡柔和化（纯 CSS）：
